@@ -5,7 +5,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
   <style>
     body { margin: 0; }
@@ -44,17 +43,25 @@
     button[data-color="green"] { background-color: #27ae60; }
     button[data-color="yellow"] { background-color: #f1c40f; color:#000; }
 
+    /* Active Color Indicator */
+    #activeColor {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      border: 2px solid #333;
+      background-color: black;
+    }
+
     /* Scoreboard */
     #scoreboard {
       position: absolute;
       top: 20px;
       right: 20px;
       background: white;
-      padding: 10px;
+      padding: 20px;
       border-radius: 8px;
-      max-width: 200px;
+      max-width: 250px;
       font-family: sans-serif;
-      font-size: 14px;
+      font-size: 24px;
       z-index: 1000;
     }
 
@@ -64,10 +71,27 @@
       align-items: center;
     }
     .tooltip-user img {
-      width: 24px;
-      height: 24px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
-      margin-right: 5px;
+      margin-right: 8px;
+    }
+
+    /* Reset Button */
+    #resetBtn {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: none;
+      background-color: #34495e;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      display: none;
+    }
+    #resetBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
     }
   </style>
 </head>
@@ -81,13 +105,12 @@
     <button data-color="red">Red</button>
     <button data-color="green">Green</button>
     <button data-color="yellow">Yellow</button>
+    <div id="activeColor"></div>
   </div>
+  <button id="resetBtn">Reset Map</button>
 </div>
 
 <div id="scoreboard"><strong>Scoreboard</strong></div>
-
-<!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -104,7 +127,6 @@ const firebaseConfig = {
   appId: "1:77626799415:web:29e0824275af1ccca616b2",
   measurementId: "G-Z9SVFKC4B2"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth();
@@ -122,20 +144,28 @@ onAuthStateChanged(auth, (user) => {
   updateUI();
 });
 
-async function signIn() {
-  await signInWithPopup(auth, provider);
-}
+// Sign-In Button
+document.getElementById("loginBtn").onclick = () => signInWithPopup(auth, provider).catch(console.error);
 
 // ====== UI ======
-document.getElementById("loginBtn").onclick = signIn;
-document.querySelectorAll("#colorPicker button").forEach(btn => {
-  btn.onclick = () => { selectedColor = btn.dataset.color; }
+const colorButtons = document.querySelectorAll("#colorPicker button[data-color]");
+const activeColorCircle = document.getElementById("activeColor");
+colorButtons.forEach(btn => {
+  btn.onclick = () => {
+    selectedColor = btn.dataset.color;
+    activeColorCircle.style.backgroundColor = selectedColor;
+  };
 });
 
 function updateUI() {
   if (currentUser) {
     document.getElementById("loginBtn").style.display = "none";
     document.getElementById("colorPicker").style.display = "flex";
+    activeColorCircle.style.backgroundColor = selectedColor;
+
+    if (currentUser.email === "blatherstv@gmail.com") {
+      document.getElementById("resetBtn").style.display = "block";
+    }
   }
 }
 
@@ -152,10 +182,9 @@ onSnapshot(doc(db, "mapState", "boston"), (docSnap) => {
   }
 });
 
-// ====== Click / Double Click Handlers ======
+// ====== Click / Double Click ======
 async function toggle(id) {
-  if (!currentUser) { alert("You must sign in first"); return; }
-
+  if (!currentUser) { alert("Sign in first!"); return; }
   selected[id] = {
     color: selectedColor,
     userName: currentUser.displayName,
@@ -166,29 +195,32 @@ async function toggle(id) {
 }
 
 async function removeColor(id) {
-  if (!currentUser) return;
   const data = selected[id];
-  if (data && data.userId === currentUser.uid) {
+  if (data && currentUser && data.userId === currentUser.uid) {
     delete selected[id];
     await setDoc(doc(db, "mapState", "boston"), selected);
   }
 }
 
-// ====== Update Styles ======
+// Reset Button
+document.getElementById("resetBtn").onclick = async () => {
+  await setDoc(doc(db,"mapState","boston"), {});
+}
+
+// ====== Styles & Scoreboard ======
 function updateStyles() {
   if (!geojsonLayer) return;
   geojsonLayer.eachLayer(layer => {
     const id = layer.feature._id;
     const data = selected[id];
     if (data) {
-      layer.setStyle({ fillColor: data.color, fillOpacity: 1 });
+      layer.setStyle({ fillColor: data.color, fillOpacity: 0.5 });
     } else {
       layer.setStyle({ fillColor: "#3388ff", fillOpacity: 0.5 });
     }
   });
 }
 
-// ====== Update Scoreboard ======
 function updateScoreboard() {
   const scores = {};
   Object.values(selected).forEach(item => {
