@@ -43,7 +43,6 @@
     #colorPicker button {
       padding:8px 14px;
       border:none;
-      border-radius:6px;
       font-weight:bold;
       cursor:pointer;
       box-shadow:0 2px 5px rgba(0,0,0,0.2);
@@ -54,9 +53,9 @@
       transform: translateY(-2px);
       box-shadow:0 4px 8px rgba(0,0,0,0.3);
     }
-    button[data-color="red"] { background-color:#e74c3c; }
-    button[data-color="green"] { background-color:#27ae60; }
-    button[data-color="yellow"] { background-color:#f1c40f; color:#000; }
+    button[data-color="red"] { background-color:red; }
+    button[data-color="green"] { background-color:green; }
+    button[data-color="yellow"] { background-color:yellow; color:#000; }
 
     /* Active Color Indicator */
     #activeColor {
@@ -203,7 +202,6 @@ onSnapshot(doc(db,"mapState","boston"), docSnap=>{
     selected = docSnap.data();
     updateStyles();
     updateScoreboard();
-    calculateAreaBonus();
   }
 });
 
@@ -261,29 +259,44 @@ function updateScoreboard(){
 }
 
 // ===== Area Bonus =====
-function calculateAreaBonus(){
-  if(!geojsonLayer) return;
-  const areaPerUser={};
-  geojsonLayer.eachLayer(layer=>{
-    const id=layer.feature._id;
-    const data=selected[id];
-    if(data){
-      // Leaflet provides latlngs in nested arrays for polygons
-      const latlngs=layer.getLatLngs()[0]||[];
-      let area=0;
-      if(latlngs.length>2){
-        const latlngArray=latlngs.map(ll=>[ll.lat,ll.lng]);
-        area=L.GeometryUtil.geodesicArea(latlngArray);
+function calculateAreaBonus() {
+  if (!geojsonLayer) return;
+
+  const areaPerUser = {};
+
+  geojsonLayer.eachLayer(layer => {
+    const id = layer.feature._id;
+    const data = selected[id];
+    if (!data) return;
+
+    let area = 0;
+
+    const latlngs = layer.getLatLngs();
+
+    // Handle both Polygon and MultiPolygon
+    function sumArea(coords) {
+      if (Array.isArray(coords[0][0])) {
+        // MultiPolygon
+        return coords.reduce((sum, poly) => sum + sumArea(poly), 0);
+      } else {
+        // Polygon
+        return L.GeometryUtil.geodesicArea(coords);
       }
-      if(!areaPerUser[data.userName]) areaPerUser[data.userName]=0;
-      areaPerUser[data.userName]+=area;
     }
+
+    area = sumArea(latlngs);
+
+    if (!areaPerUser[data.userName]) areaPerUser[data.userName] = 0;
+    areaPerUser[data.userName] += area;
   });
-  let topUser=null,maxArea=0;
-  for(const [name,area] of Object.entries(areaPerUser)){
-    if(area>maxArea){maxArea=area;topUser=name;}
+
+  // Find top user
+  let topUser = null, maxArea = 0;
+  for (const [name, area] of Object.entries(areaPerUser)) {
+    if (area > maxArea) { maxArea = area; topUser = name; }
   }
-  document.getElementById("areaBonus").innerText=topUser?`Area Bonus: ${topUser}`:"";
+
+  document.getElementById("areaBonus").innerText = topUser ? `Area Bonus: ${topUser}` : "";
 }
 
 // ===== Feature Behavior =====
