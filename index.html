@@ -109,6 +109,26 @@
       transform: translateY(-2px);
       box-shadow:0 4px 8px rgba(0,0,0,0.3);
     }
+
+    /* Sign-out button */
+    #signOutBtn {
+      position:absolute;
+      bottom:20px;
+      right:20px;
+      padding:8px 12px;
+      border:none;
+      border-radius:6px;
+      background:#e74c3c;
+      color:white;
+      font-weight:bold;
+      cursor:pointer;
+      z-index:1000;
+      display:none;
+    }
+    #signOutBtn:hover {
+      transform: translateY(-2px);
+      box-shadow:0 4px 8px rgba(0,0,0,0.3);
+    }
   </style>
 </head>
 <body>
@@ -129,11 +149,13 @@
 
 <div id="scoreboard"><strong>Scoreboard</strong><br><span id="areaBonus"></span></div>
 
+<button id="signOutBtn">Sign Out</button>
+
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <!-- Leaflet GeometryUtil Plugin -->
 <script src="https://cdn.jsdelivr.net/npm/leaflet-geometryutil@0.9.3/src/leaflet.geometryutil.min.js"></script>
-  
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -148,11 +170,21 @@ const firebaseConfig = {
   messagingSenderId: "77626799415",
   appId: "1:77626799415:web:29e0824275af1ccca616b2",
   measurementId: "G-Z9SVFKC4B2"
-};;
+};
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth();
 const provider = new GoogleAuthProvider();
+
+// ===== Whitelist =====
+const WHITELIST = [
+  "blatherstv@gmail.com",
+  "player1@gmail.com",
+  "player2@gmail.com",
+  "player3@gmail.com",
+  "player4@gmail.com",
+  "player5@gmail.com"
+];
 
 // ===== State =====
 let currentUser = null;
@@ -162,12 +194,24 @@ let geojsonLayer = null;
 
 // ===== Auth =====
 onAuthStateChanged(auth, user => {
-  currentUser = user;
+  if(user){
+    if(!WHITELIST.includes(user.email)){
+      alert("Your email is not allowed to access this map.");
+      auth.signOut();
+      return;
+    }
+    currentUser = user;
+  } else {
+    currentUser = null;
+  }
   updateUI();
 });
 
 // Sign-In
 document.getElementById("loginBtn").onclick = () => signInWithPopup(auth, provider).catch(console.error);
+
+// Sign-Out
+document.getElementById("signOutBtn").onclick = () => auth.signOut();
 
 // ===== UI =====
 const colorButtons = document.querySelectorAll("#colorPicker button[data-color]");
@@ -182,13 +226,23 @@ colorButtons.forEach(btn => {
 });
 
 function updateUI() {
+  const signOutBtn = document.getElementById("signOutBtn");
   if(currentUser){
     document.getElementById("loginBtn").style.display="none";
+    signOutBtn.style.display="block";
+    // Only whitelisted users can pick colors and see the reset button (admin)
     document.getElementById("colorPicker").style.display="flex";
     activeColorCircle.style.backgroundColor = selectedColor;
     if(currentUser.email==="blatherstv@gmail.com"){
       document.getElementById("resetBtn").style.display="block";
+    } else {
+      document.getElementById("resetBtn").style.display="none";
     }
+  } else {
+    document.getElementById("loginBtn").style.display="block";
+    signOutBtn.style.display="none";
+    document.getElementById("colorPicker").style.display="none";
+    document.getElementById("resetBtn").style.display="none";
   }
 }
 
@@ -243,6 +297,31 @@ function updateStyles(){
     });
   });
 }
+
+function calculateAreaBonus() {
+  if (!geojsonLayer) return null;
+
+  const areaPerUser = {};
+
+  geojsonLayer.eachLayer(layer => {
+    const id = layer.feature._id;
+    const data = selected[id];
+    if (!data) return;
+
+    const area = layer.feature.properties.area || 0;
+
+    if (!areaPerUser[data.userName]) areaPerUser[data.userName] = 0;
+    areaPerUser[data.userName] += area;
+  });
+
+  // Find top user
+  let topUser = null, maxArea = 0;
+  for (const [name, area] of Object.entries(areaPerUser)) {
+    if (area > maxArea) { maxArea = area; topUser = name; }
+  }
+  return topUser;
+}
+
 function updateScoreboard(){
   const scores={};
   Object.values(selected).forEach(item=>{
@@ -254,49 +333,8 @@ function updateScoreboard(){
     Object.entries(scores)
       .sort((a,b)=>b[1]-a[1])
       .map(([name,pts])=>`${name}: ${pts}`)
-      .join("<br>");
-  calculateAreaBonus();
-}
-
-// ===== Area Bonus =====
-function calculateAreaBonus() {
-  if (!geojsonLayer) return;
-
-  const areaPerUser = {};
-
-  geojsonLayer.eachLayer(layer => {
-    const id = layer.feature._id;
-    const data = selected[id];
-    if (!data) return;
-
-    let area = 0;
-
-    const latlngs = layer.getLatLngs();
-
-    // Handle both Polygon and MultiPolygon
-    function sumArea(coords) {
-      if (Array.isArray(coords[0][0])) {
-        // MultiPolygon
-        return coords.reduce((sum, poly) => sum + sumArea(poly), 0);
-      } else {
-        // Polygon
-        return L.GeometryUtil.geodesicArea(coords);
-      }
-    }
-
-    area = sumArea(latlngs);
-
-    if (!areaPerUser[data.userName]) areaPerUser[data.userName] = 0;
-    areaPerUser[data.userName] += area;
-  });
-
-  // Find top user
-  let topUser = null, maxArea = 0;
-  for (const [name, area] of Object.entries(areaPerUser)) {
-    if (area > maxArea) { maxArea = area; topUser = name; }
-  }
-
-  document.getElementById("areaBonus").innerText = topUser ? `Area Bonus: ${topUser}` : "";
+      .join("<br>") +
+    "<br><br>Area Bonus: " + (calculateAreaBonus() || "");
 }
 
 // ===== Feature Behavior =====
