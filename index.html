@@ -9,121 +9,31 @@
   <style>
     body { margin:0; }
     #map { height:100vh; width:100vw; }
-
-    /* Top title */
     #title {
-      position:absolute;
-      top:10px;
-      left:50%;
-      transform:translateX(-50%);
-      z-index:1000;
-      font-family:sans-serif;
-      font-size:18px;
-      font-weight:bold;
-      background: rgba(255,255,255,0.8);
-      padding: 8px 16px;
+      position:absolute; top:10px; left:50%; transform:translateX(-50%);
+      z-index:1000; font-family:sans-serif; font-size:18px; font-weight:bold;
+      background: rgba(255,255,255,0.8); padding: 8px 16px;
     }
-
-    /* Controls container */
     #controls {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      display:flex;
-      gap:15px;
-      align-items:center;
-      background: white;
-      padding:10px;
-      z-index:1000;
+      position: absolute; bottom: 20px; left: 20px; display:flex; gap:15px; align-items:center;
+      background: white; padding:10px; z-index:1000;
     }
-
-    /* Color Buttons */
     #colorPicker button {
-      padding:8px 14px;
-      border:none;
-      font-weight:bold;
-      cursor:pointer;
-      box-shadow:0 2px 5px rgba(0,0,0,0.2);
-      transition: transform 0.1s, box-shadow 0.1s;
-      color:white;
+      padding:8px 14px; border:none; font-weight:bold; cursor:pointer;
+      box-shadow:0 2px 5px rgba(0,0,0,0.2); transition: transform 0.1s, box-shadow 0.1s; color:white;
     }
-    #colorPicker button:hover {
-      transform: translateY(-2px);
-      box-shadow:0 4px 8px rgba(0,0,0,0.3);
-    }
+    #colorPicker button:hover { transform: translateY(-2px); box-shadow:0 4px 8px rgba(0,0,0,0.3); }
     button[data-color="red"] { background-color:red; }
     button[data-color="green"] { background-color:green; }
     button[data-color="yellow"] { background-color:yellow; color:#000; }
-
-    /* Active Color Indicator */
-    #activeColor {
-      width:24px;
-      height:24px;
-      border-radius:50%;
-      border:2px solid #333;
-      background-color:black;
-      transition: transform 0.2s;
-    }
-
-    /* Scoreboard */
-    #scoreboard {
-      position:absolute;
-      top:20px;
-      right:20px;
-      background:white;
-      padding:20px;
-      max-width:250px;
-      font-family:sans-serif;
-      font-size:24px;
-      z-index:1000;
-    }
-
-    /* Tooltip user */
-    .tooltip-user {
-      display:flex;
-      align-items:center;
-    }
-    .tooltip-user img {
-      width:32px;
-      height:32px;
-      border-radius:50%;
-      margin-right:8px;
-    }
-
-    /* Reset button */
-    #resetBtn {
-      padding:8px 12px;
-      border:none;
-      background-color:#34495e;
-      color:white;
-      font-weight:bold;
-      cursor:pointer;
-      box-shadow:0 2px 5px rgba(0,0,0,0.2);
-      display:none;
-    }
-    #resetBtn:hover {
-      transform: translateY(-2px);
-      box-shadow:0 4px 8px rgba(0,0,0,0.3);
-    }
-
-    /* Sign-out button */
-    #signOutBtn {
-      position:absolute;
-      bottom:20px;
-      right:20px;
-      padding:8px 12px;
-      border:none;
-      background:#e74c3c;
-      color:white;
-      font-weight:bold;
-      cursor:pointer;
-      z-index:1000;
-      display:none;
-    }
-    #signOutBtn:hover {
-      transform: translateY(-2px);
-      box-shadow:0 4px 8px rgba(0,0,0,0.3);
-    }
+    #activeColor { width:24px; height:24px; border-radius:50%; border:2px solid #333; background-color:black; transition: transform 0.2s; }
+    #scoreboard { position:absolute; top:20px; right:20px; background:white; padding:20px; max-width:250px; font-family:sans-serif; font-size:24px; z-index:1000; }
+    .tooltip-user { display:flex; align-items:center; }
+    .tooltip-user img { width:32px; height:32px; border-radius:50%; margin-right:8px; }
+    #resetBtn { padding:8px 12px; border:none; background-color:#34495e; color:white; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2); display:none; }
+    #resetBtn:hover { transform: translateY(-2px); box-shadow:0 4px 8px rgba(0,0,0,0.3); }
+    #signOutBtn { position:absolute; bottom:20px; right:20px; padding:8px 12px; border:none; background:#e74c3c; color:white; font-weight:bold; cursor:pointer; z-index:1000; display:none; }
+    #signOutBtn:hover { transform: translateY(-2px); box-shadow:0 4px 8px rgba(0,0,0,0.3); }
   </style>
 </head>
 <body>
@@ -143,12 +53,9 @@
 </div>
 
 <div id="scoreboard"><strong>Scoreboard</strong><br><span id="areaBonus"></span></div>
-
 <button id="signOutBtn">Sign Out</button>
 
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<!-- Leaflet GeometryUtil Plugin -->
 <script src="https://cdn.jsdelivr.net/npm/leaflet-geometryutil@0.9.3/src/leaflet.geometryutil.min.js"></script>
 
 <script type="module">
@@ -156,7 +63,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// ===== Firebase Config =====
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyAv9PMEqDgXaqpuHzAgjJDPthwYFZaxaRg",
   authDomain: "battle-for-boston.firebaseapp.com",
@@ -171,7 +78,7 @@ const db = getFirestore(app);
 const auth = getAuth();
 const provider = new GoogleAuthProvider();
 
-// ===== Whitelist =====
+// Whitelist
 const WHITELIST = [
   "blatherstv@gmail.com",
   "ethanby2000@gmail.com",
@@ -181,34 +88,24 @@ const WHITELIST = [
   "player5@gmail.com"
 ];
 
-// ===== State =====
+// State
 let currentUser = null;
 let selectedColor = "red";
 let selected = {};
 let geojsonLayer = null;
+const subdivisionAreas = {}; // area per subdivision
 
-// ===== Auth =====
+// Auth
 onAuthStateChanged(auth, user => {
-  if(user){
-    if(!WHITELIST.includes(user.email)){
-      alert("You do not have access to edit the map, but you can still spectate! Request permission from Blathers");
-      auth.signOut();
-      return;
-    }
-    currentUser = user;
-  } else {
-    currentUser = null;
-  }
+  currentUser = user;
   updateUI();
 });
 
-// Sign-In
+// Sign in/out
 document.getElementById("loginBtn").onclick = () => signInWithPopup(auth, provider).catch(console.error);
-
-// Sign-Out
 document.getElementById("signOutBtn").onclick = () => auth.signOut();
 
-// ===== UI =====
+// UI
 const colorButtons = document.querySelectorAll("#colorPicker button[data-color]");
 const activeColorCircle = document.getElementById("activeColor");
 colorButtons.forEach(btn => {
@@ -225,14 +122,16 @@ function updateUI() {
   if(currentUser){
     document.getElementById("loginBtn").style.display="none";
     signOutBtn.style.display="block";
-    // Only whitelisted users can pick colors and see the reset button (admin)
-    document.getElementById("colorPicker").style.display="flex";
-    activeColorCircle.style.backgroundColor = selectedColor;
-    if(currentUser.email==="blatherstv@gmail.com"){
-      document.getElementById("resetBtn").style.display="block";
+
+    if(WHITELIST.includes(currentUser.email)){
+      document.getElementById("colorPicker").style.display="flex";
+      if(currentUser.email==="blatherstv@gmail.com") document.getElementById("resetBtn").style.display="block";
+      else document.getElementById("resetBtn").style.display="none";
     } else {
+      document.getElementById("colorPicker").style.display="none";
       document.getElementById("resetBtn").style.display="none";
     }
+
   } else {
     document.getElementById("loginBtn").style.display="block";
     signOutBtn.style.display="none";
@@ -241,11 +140,11 @@ function updateUI() {
   }
 }
 
-// ===== Map =====
+// Map
 const map = L.map('map').setView([42.3601, -71.0589], 11);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
 
-// ===== Firestore Real-Time =====
+// Firestore real-time
 onSnapshot(doc(db,"mapState","boston"), docSnap=>{
   if(docSnap.exists()){
     selected = docSnap.data();
@@ -254,15 +153,13 @@ onSnapshot(doc(db,"mapState","boston"), docSnap=>{
   }
 });
 
-// ===== Click / Double-Click =====
+// Click / Double-Click
 async function toggle(id){
-  if(!currentUser){ alert("Sign in first!"); return; }
-  selected[id]={
-    color:selectedColor,
-    userName:currentUser.displayName,
-    userId:currentUser.uid,
-    photoURL:currentUser.photoURL
-  };
+  if(!currentUser || !WHITELIST.includes(currentUser.email)){
+    alert("You do not have permission to modify the map.");
+    return;
+  }
+  selected[id]={ color:selectedColor, userName:currentUser.displayName, userId:currentUser.uid, photoURL:currentUser.photoURL };
   await setDoc(doc(db,"mapState","boston"),selected);
 }
 async function removeColor(id){
@@ -273,47 +170,33 @@ async function removeColor(id){
   }
 }
 
-// Reset Button
-document.getElementById("resetBtn").onclick=async()=>{
-  await setDoc(doc(db,"mapState","boston"),{});
-}
+// Reset
+document.getElementById("resetBtn").onclick=async()=>{ await setDoc(doc(db,"mapState","boston"),{}); }
 
-// ===== Styles & Scoreboard =====
+// Styles & Scoreboard
 function updateStyles(){
   if(!geojsonLayer) return;
   geojsonLayer.eachLayer(layer=>{
     const id=layer.feature._id;
     const data=selected[id];
-    layer.setStyle({
-      fillColor:data?data.color:"#3388ff",
-      fillOpacity:0.5,
-      color:"#3388ff",
-      weight:1
-    });
+    layer.setStyle({ fillColor:data?data.color:"#3388ff", fillOpacity:0.5, color:"#3388ff", weight:1 });
   });
 }
 
-function calculateAreaBonus() {
-  function calculateAreaBonus() {
-  if (!geojsonLayer) return null;
-
+function calculateAreaBonus(){
+  if(!geojsonLayer) return null;
   const areaPerUser = {};
-
-  geojsonLayer.eachLayer(layer => {
+  geojsonLayer.eachLayer(layer=>{
     const id = layer.feature._id;
     const data = selected[id];
-    if (!data) return;
-
+    if(!data) return;
     const area = subdivisionAreas[id] || 0;
-
-    if (!areaPerUser[data.userName]) areaPerUser[data.userName] = 0;
+    if(!areaPerUser[data.userName]) areaPerUser[data.userName] = 0;
     areaPerUser[data.userName] += area;
   });
-
-  // Find top user
-  let topUser = null, maxArea = 0;
-  for (const [name, area] of Object.entries(areaPerUser)) {
-    if (area > maxArea) { maxArea = area; topUser = name; }
+  let topUser=null, maxArea=0;
+  for(const [name, area] of Object.entries(areaPerUser)){
+    if(area>maxArea){ maxArea=area; topUser=name; }
   }
   return topUser;
 }
@@ -326,70 +209,45 @@ function updateScoreboard(){
   });
   const board=document.getElementById("scoreboard");
   board.innerHTML="<strong>Scoreboard</strong><br>"+
-    Object.entries(scores)
-      .sort((a,b)=>b[1]-a[1])
-      .map(([name,pts])=>`${name}: ${pts}`)
-      .join("<br>") +
-    "<br><br>Area Bonus: " + (calculateAreaBonus() || "");
+    Object.entries(scores).sort((a,b)=>b[1]-a[1]).map(([name,pts])=>`${name}: ${pts}`).join("<br>") +
+    "<br><br>Area Bonus: " + (calculateAreaBonus()||"");
 }
 
-// ===== Feature Behavior =====
+// Feature behavior
 function onEachFeature(feature,layer){
   const id=feature._id;
   layer.setStyle({fillColor:"#3388ff",fillOpacity:0.5,color:"#3388ff",weight:1});
-
   layer.on('mouseover',()=>{
     layer.setStyle({color:"white",weight:2});
     const data=selected[id];
     if(data){
-      layer.bindTooltip(`<div class="tooltip-user">
-        <img src="${data.photoURL}" />
-        ${data.userName}
-      </div>`,{permanent:false,direction:"top"}).openTooltip();
+      layer.bindTooltip(`<div class="tooltip-user"><img src="${data.photoURL}" />${data.userName}</div>`,{permanent:false,direction:"top"}).openTooltip();
     }
   });
-
-  layer.on('mouseout',()=>{
-    layer.setStyle({color:"#3388ff",weight:1});
-    layer.closeTooltip();
-    updateStyles();
-  });
-
+  layer.on('mouseout',()=>{ layer.setStyle({color:"#3388ff",weight:1}); layer.closeTooltip(); updateStyles(); });
   layer.on('click',()=>toggle(id));
   layer.on('dblclick',()=>removeColor(id));
 }
 
-// ===== Load GeoJSON =====
-const subdivisionAreas = {}; // store calculated area per subdivision
-  
+// Load GeoJSON and compute subdivision areas
 fetch('Boston Subdivisions.json')
-  .then(res => res.json())
-  .then(data => {
-    data.features.forEach((f, i) => {
+  .then(res=>res.json())
+  .then(data=>{
+    data.features.forEach((f,i)=>{
       f._id = i.toString();
-
-      // Compute area of this subdivision
-      const latlngs = f.geometry.coordinates;
-
-      function sumArea(coords) {
-        if (Array.isArray(coords[0][0])) {
-          // MultiPolygon
-          return coords.reduce((sum, poly) => sum + sumArea(poly), 0);
-        } else {
-          // Polygon
-          const latlngArray = coords.map(ll => L.latLng(ll[1], ll[0]));
-          return L.GeometryUtil.geodesicArea(latlngArray);
-        }
+      // Compute area
+      const coords = f.geometry.coordinates;
+      function sumArea(c){ 
+        if(Array.isArray(c[0][0])) return c.reduce((sum, poly)=>sum+sumArea(poly),0);
+        return L.GeometryUtil.geodesicArea(c.map(ll=>L.latLng(ll[1],ll[0])));
       }
-
-      const area = sumArea(latlngs);
-      subdivisionAreas[f._id] = area;
+      subdivisionAreas[f._id] = sumArea(coords);
     });
-
-    geojsonLayer = L.geoJSON(data, { onEachFeature }).addTo(map);
+    geojsonLayer = L.geoJSON(data,{onEachFeature}).addTo(map);
     updateStyles();
     updateScoreboard();
   });
+
 </script>
 </body>
 </html>
