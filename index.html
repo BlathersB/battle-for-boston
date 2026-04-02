@@ -46,7 +46,7 @@
       box-shadow:0 2px 5px rgba(0,0,0,0.2);
       transition: transform 0.1s, box-shadow 0.1s;
       color:white;
-      -webkit-text-stroke: 0.05em black;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
     }
     #colorPicker button:hover {
       transform: translateY(-2px);
@@ -189,7 +189,7 @@ let geojsonLayer = null;
 onAuthStateChanged(auth, user => {
   if(user){
     if(!WHITELIST.includes(user.email)){
-      alert("You do not have access to edit the map, but you can still spectate! Request permission from Blathers");
+      alert("You cannot edit the map as you are not a listed participant, but you can still spectate!");
       auth.signOut();
       return;
     }
