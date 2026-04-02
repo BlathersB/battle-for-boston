@@ -1,53 +1,96 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Boston Subdivisions</title>
+  <title>Boston Subdivisions Collaborative Map</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-
   <style>
     body { margin: 0; }
     #map { height: 100vh; }
+    #controls {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      z-index: 1000;
+    }
+    #colorPicker button {
+      margin-right: 5px;
+    }
   </style>
 </head>
 <body>
 
 <div id="map"></div>
 
+<div id="controls">
+  <button id="loginBtn">Sign in with Google</button>
+  <div id="colorPicker" style="display:none;">
+    <button data-color="red">Red</button>
+    <button data-color="green">Green</button>
+    <button data-color="yellow">Yellow</button>
+  </div>
+</div>
+
+<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script type="module">
-// 🔥 Firebase
+// ==================== Firebase Setup ====================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// 👉 PASTE YOUR CONFIG HERE
+// 🔹 Paste your Firebase config here
 const firebaseConfig = {
-  apiKey: "AIzaSyAv9PMEqDgXaqpuHzAgjJDPthwYFZaxaRg",
-  authDomain: "battle-for-boston.firebaseapp.com",
-  projectId: "battle-for-boston",
-  storageBucket: "battle-for-boston.firebasestorage.app",
-  messagingSenderId: "77626799415",
-  appId: "1:77626799415:web:29e0824275af1ccca616b2",
-  measurementId: "G-Z9SVFKC4B2"
+  apiKey: "YOUR_KEY",
+  authDomain: "YOUR_APP.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth();
+const provider = new GoogleAuthProvider();
 
-// 🗺️ Map
-const map = L.map('map').setView([42.3601, -71.0589], 11);
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 18
-}).addTo(map);
-
-let geojsonLayer;
+let currentUser = null;
+let selectedColor = "red";
 let selected = {};
+let geojsonLayer;
 
-// 🔄 Real-time sync
+// ==================== Google Auth ====================
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+  updateUI();
+});
+
+async function signIn() {
+  await signInWithPopup(auth, provider);
+}
+
+// ==================== UI ====================
+document.getElementById("loginBtn").onclick = signIn;
+document.querySelectorAll("#colorPicker button").forEach(btn => {
+  btn.onclick = () => { selectedColor = btn.dataset.color; }
+});
+
+function updateUI() {
+  if (currentUser) {
+    document.getElementById("loginBtn").style.display = "none";
+    document.getElementById("colorPicker").style.display = "block";
+  }
+}
+
+// ==================== Map Setup ====================
+const map = L.map('map').setView([42.3601, -71.0589], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
+
+// ==================== Firestore Real-Time ====================
 onSnapshot(doc(db, "mapState", "boston"), (docSnap) => {
   if (docSnap.exists()) {
     selected = docSnap.data();
@@ -55,81 +98,72 @@ onSnapshot(doc(db, "mapState", "boston"), (docSnap) => {
   }
 });
 
-// 🎨 Style updater
+// ==================== Click Handler ====================
+async function toggle(id) {
+  if (!currentUser) {
+    alert("You must sign in first");
+    return;
+  }
+  const ref = doc(db, "mapState", "boston");
+
+  selected[id] = {
+    color: selectedColor,
+    userName: currentUser.displayName,
+    userId: currentUser.uid
+  };
+
+  await setDoc(ref, selected);
+}
+
+// ==================== Styling ====================
 function updateStyles() {
   geojsonLayer.eachLayer(layer => {
     const id = layer.feature._id;
+    const data = selected[id];
 
-    if (selected[id]) {
-      layer.setStyle({
-        fillColor: "black",
-        fillOpacity: 1
-      });
+    if (data) {
+      layer.setStyle({ fillColor: data.color, fillOpacity: 1 });
     } else {
-      layer.setStyle({
-        fillColor: "#3388ff",
-        fillOpacity: 0.5
-      });
+      layer.setStyle({ fillColor: "#3388ff", fillOpacity: 0.5 });
     }
   });
 }
 
-// 🖱️ Click handler
-async function toggle(id) {
-  selected[id] = !selected[id];
-  await setDoc(doc(db, "mapState", "boston"), selected);
-}
-
-// 📍 Feature behavior
+// ==================== Feature Behavior ====================
 function onEachFeature(feature, layer) {
-
   const id = feature._id;
 
-  layer.setStyle({
-    color: "#3388ff",
-    weight: 1,
-    fillColor: "#3388ff",
-    fillOpacity: 0.5
-  });
+  layer.setStyle({ color: "#3388ff", weight: 1, fillColor: "#3388ff", fillOpacity: 0.5 });
 
   layer.on('mouseover', () => {
-    layer.setStyle({
-      color: "white",
-      weight: 2
-    });
+    layer.setStyle({ color: "white", weight: 2 });
+
+    const data = selected[id];
+    if (data) {
+      layer.bindTooltip(data.userName, { permanent: false, direction: "top" }).openTooltip();
+    }
   });
 
   layer.on('mouseout', () => {
-    layer.setStyle({
-      color: "#3388ff",
-      weight: 1
-    });
+    layer.setStyle({ color: "#3388ff", weight: 1 });
+    layer.closeTooltip();
     updateStyles();
   });
 
-  layer.on('click', () => {
-    toggle(id);
-  });
+  layer.on('click', () => toggle(id));
 }
 
-// 📦 Load GeoJSON
+// ==================== Load GeoJSON ====================
 fetch('Boston Subdivisions.json')
   .then(res => res.json())
   .then(data => {
+    // Assign stable IDs
+    data.features.forEach((f, i) => f._id = i.toString());
 
-    // ✅ Assign IDs based on index
-    data.features.forEach((f, i) => {
-      f._id = i.toString();
-    });
-
-    geojsonLayer = L.geoJSON(data, {
-      onEachFeature: onEachFeature
-    }).addTo(map);
-
+    geojsonLayer = L.geoJSON(data, { onEachFeature: onEachFeature }).addTo(map);
     updateStyles();
   });
 
 </script>
-
 </body>
 </html>
