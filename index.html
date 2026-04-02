@@ -251,7 +251,7 @@ onSnapshot(doc(db,"mapState","boston"), docSnap=>{
 
 // ===== Click / Double-Click =====
 async function toggle(id){
-  if(!currentUser){ alert("Sign in first!"); return; }
+  if(!currentUser){ alert("Sign in with a whitelisted google account in order to edit the map."); return; }
   selected[id]={
     color:selectedColor,
     userName:currentUser.displayName,
@@ -301,29 +301,36 @@ function updateScoreboard(){
 }
 
 // ===== Feature Behavior =====
-function onEachFeature(feature,layer){
-  const id=feature._id;
-  layer.setStyle({fillColor:"#3388ff",fillOpacity:0.5,color:"#3388ff",weight:1});
+function onEachFeature(feature, layer) {
+  const id = feature._id;
+  const subName = feature.properties.name; // assuming your JSON has a 'name' field
 
-  layer.on('mouseover',()=>{
-    layer.setStyle({color:"white",weight:2});
-    const data=selected[id];
-    if(data){
-      layer.bindTooltip(`<div class="tooltip-user">
+  layer.setStyle({ fillColor: "#3388ff", fillOpacity: 0.5, color: "#3388ff", weight: 1 });
+
+  layer.on('mouseover', () => {
+    layer.setStyle({ color: "white", weight: 2 });
+
+    const data = selected[id];
+    let tooltipContent = `<div><strong>${subName}</strong></div>`;
+    
+    if (data) {
+      tooltipContent += `<div class="tooltip-user">
         <img src="${data.photoURL}" />
         ${data.userName}
-      </div>`,{permanent:false,direction:"top"}).openTooltip();
+      </div>`;
     }
+
+    layer.bindTooltip(tooltipContent, { permanent: false, direction: "top" }).openTooltip();
   });
 
-  layer.on('mouseout',()=>{
-    layer.setStyle({color:"#3388ff",weight:1});
+  layer.on('mouseout', () => {
+    layer.setStyle({ color: "#3388ff", weight: 1 });
     layer.closeTooltip();
     updateStyles();
   });
 
-  layer.on('click',()=>toggle(id));
-  layer.on('dblclick',()=>removeColor(id));
+  layer.on('click', () => toggle(id));
+  layer.on('dblclick', () => removeColor(id));
 }
 
 // ===== Load GeoJSON =====
