@@ -10,6 +10,8 @@
   <style>
     body { margin: 0; }
     #map { height: 100vh; }
+
+    /* Controls */
     #controls {
       position: absolute;
       bottom: 20px;
@@ -18,10 +20,14 @@
       padding: 10px;
       border-radius: 8px;
       z-index: 1000;
+      display: flex;
+      gap: 10px;
+      align-items: center;
     }
+
+    /* Color Buttons */
     #colorPicker button {
       padding: 8px 14px;
-      margin-right: 5px;
       border: none;
       border-radius: 6px;
       color: white;
@@ -37,6 +43,32 @@
     button[data-color="red"] { background-color: #e74c3c; }
     button[data-color="green"] { background-color: #27ae60; }
     button[data-color="yellow"] { background-color: #f1c40f; color:#000; }
+
+    /* Scoreboard */
+    #scoreboard {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 200px;
+      font-family: sans-serif;
+      font-size: 14px;
+      z-index: 1000;
+    }
+
+    /* Tooltip images */
+    .tooltip-user {
+      display: flex;
+      align-items: center;
+    }
+    .tooltip-user img {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
   </style>
 </head>
 <body>
@@ -52,27 +84,17 @@
   </div>
 </div>
 
-<div id="scoreboard" style="
-  position:absolute;
-  top:20px;
-  right:20px;
-  background:white;
-  padding:10px;
-  border-radius:8px;
-  max-width:200px;
-  font-family:sans-serif;
-"></div>
+<div id="scoreboard"><strong>Scoreboard</strong></div>
 
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script type="module">
-// ==================== Firebase Setup ====================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// 🔹 Paste your Firebase config here
+// ====== Firebase Config ======
 const firebaseConfig = {
   apiKey: "AIzaSyAv9PMEqDgXaqpuHzAgjJDPthwYFZaxaRg",
   authDomain: "battle-for-boston.firebaseapp.com",
@@ -88,12 +110,13 @@ const db = getFirestore(app);
 const auth = getAuth();
 const provider = new GoogleAuthProvider();
 
+// ====== State ======
 let currentUser = null;
 let selectedColor = "red";
 let selected = {};
-let geojsonLayer;
+let geojsonLayer = null;
 
-// ==================== Google Auth ====================
+// ====== Auth ======
 onAuthStateChanged(auth, (user) => {
   currentUser = user;
   updateUI();
@@ -103,7 +126,7 @@ async function signIn() {
   await signInWithPopup(auth, provider);
 }
 
-// ==================== UI ====================
+// ====== UI ======
 document.getElementById("loginBtn").onclick = signIn;
 document.querySelectorAll("#colorPicker button").forEach(btn => {
   btn.onclick = () => { selectedColor = btn.dataset.color; }
@@ -112,30 +135,26 @@ document.querySelectorAll("#colorPicker button").forEach(btn => {
 function updateUI() {
   if (currentUser) {
     document.getElementById("loginBtn").style.display = "none";
-    document.getElementById("colorPicker").style.display = "block";
+    document.getElementById("colorPicker").style.display = "flex";
   }
 }
 
-// ==================== Map Setup ====================
+// ====== Map Setup ======
 const map = L.map('map').setView([42.3601, -71.0589], 11);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
 
-// ==================== Firestore Real-Time ====================
+// ====== Firestore Real-Time ======
 onSnapshot(doc(db, "mapState", "boston"), (docSnap) => {
   if (docSnap.exists()) {
     selected = docSnap.data();
     updateStyles();
-    updateScoreboard()
+    updateScoreboard();
   }
 });
 
-// ==================== Click Handler ====================
+// ====== Click / Double Click Handlers ======
 async function toggle(id) {
-  if (!currentUser) {
-    alert("You must sign in first");
-    return;
-  }
-  const ref = doc(db, "mapState", "boston");
+  if (!currentUser) { alert("You must sign in first"); return; }
 
   selected[id] = {
     color: selectedColor,
@@ -143,97 +162,84 @@ async function toggle(id) {
     userId: currentUser.uid,
     photoURL: currentUser.photoURL
   };
-
-  await setDoc(ref, selected);
+  await setDoc(doc(db, "mapState", "boston"), selected);
 }
 
-// ==================== Styling ====================
+async function removeColor(id) {
+  if (!currentUser) return;
+  const data = selected[id];
+  if (data && data.userId === currentUser.uid) {
+    delete selected[id];
+    await setDoc(doc(db, "mapState", "boston"), selected);
+  }
+}
+
+// ====== Update Styles ======
 function updateStyles() {
+  if (!geojsonLayer) return;
   geojsonLayer.eachLayer(layer => {
     const id = layer.feature._id;
     const data = selected[id];
-
     if (data) {
-      layer.bindTooltip(`
-        <div style="display:flex; align-items:center;">
-          <img src="${data.photoURL}" width="24" height="24" style="border-radius:50%; margin-right:5px;" />
-          ${data.userName}
-        </div>
-      `, { permanent:false, direction:"top" }).openTooltip();
+      layer.setStyle({ fillColor: data.color, fillOpacity: 1 });
     } else {
       layer.setStyle({ fillColor: "#3388ff", fillOpacity: 0.5 });
     }
   });
 }
 
-// ============== Scoreboard =========== //
-  function updateScoreboard() {
+// ====== Update Scoreboard ======
+function updateScoreboard() {
   const scores = {};
   Object.values(selected).forEach(item => {
     if (!scores[item.userName]) scores[item.userName] = 0;
     scores[item.userName] += 1;
   });
-
   const board = document.getElementById("scoreboard");
   board.innerHTML = "<strong>Scoreboard</strong><br>" +
     Object.entries(scores)
       .sort((a,b)=>b[1]-a[1])
-      .map(([name, pts]) => `${name}: ${pts}`).join("<br>");
+      .map(([name, pts]) => `${name}: ${pts}`)
+      .join("<br>");
 }
 
-// ========== //
-async function removeColor(id) {
-  if (!currentUser) return;
-
-  const data = selected[id];
-  if (!data) return;
-
-  // Only allow user to remove their own color
-  if (data.userId === currentUser.uid) {
-    delete selected[id];
-    await setDoc(doc(db, "mapState", "boston"), selected);
-  }
-}
-
-// ==================== Feature Behavior ====================
+// ====== Feature Behavior ======
 function onEachFeature(feature, layer) {
   const id = feature._id;
-
-  layer.setStyle({ color: "#3388ff", weight: 1, fillColor: "#3388ff", fillOpacity: 0.5 });
+  layer.setStyle({ color:"#3388ff", weight:1, fillColor:"#3388ff", fillOpacity:0.5 });
 
   layer.on('mouseover', () => {
-    layer.setStyle({ color: "white", weight: 2 });
-
-  layer.on('dblclick', () => removeColor(id));
-
+    layer.setStyle({ color:"white", weight:2 });
     const data = selected[id];
     if (data) {
-      layer.bindTooltip(data.userName, { permanent: false, direction: "top" }).openTooltip();
+      layer.bindTooltip(`
+        <div class="tooltip-user">
+          <img src="${data.photoURL}" />
+          ${data.userName}
+        </div>
+      `, { permanent:false, direction:"top" }).openTooltip();
     }
   });
 
   layer.on('mouseout', () => {
-    layer.setStyle({ color: "#3388ff", weight: 1 });
+    layer.setStyle({ color:"#3388ff", weight:1 });
     layer.closeTooltip();
     updateStyles();
-    updateScoreboard();
   });
 
   layer.on('click', () => toggle(id));
+  layer.on('dblclick', () => removeColor(id));
 }
 
-// ==================== Load GeoJSON ====================
+// ====== Load GeoJSON ======
 fetch('Boston Subdivisions.json')
   .then(res => res.json())
   .then(data => {
-    // Assign stable IDs
-    data.features.forEach((f, i) => f._id = i.toString());
-
-    geojsonLayer = L.geoJSON(data, { onEachFeature: onEachFeature }).addTo(map);
+    data.features.forEach((f,i)=>f._id = i.toString());
+    geojsonLayer = L.geoJSON(data, { onEachFeature }).addTo(map);
     updateStyles();
     updateScoreboard();
   });
-
 </script>
 </body>
 </html>
