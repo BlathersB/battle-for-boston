@@ -65,7 +65,7 @@
       position:absolute;
       top:20px;
       right:20px;
-      background:white;
+      background: rgba(255,255,255,0.8);
       padding:20px;
       max-width:250px;
       font-family:sans-serif;
@@ -334,26 +334,30 @@ function onEachFeature(feature,layer){
 
 // Load GeoJSON and calculate subdivision areas
 fetch('Boston Subdivisions.json')
-  .then(res=>res.json())
-  .then(data=>{
-    data.features.forEach((f,i)=>{
-      f._id=i.toString();
+  .then(res => res.json())
+  .then(data => {
+    data.features.forEach((f, i) => {
+      f._id = i.toString();
 
-      function sumArea(coords){
-        if(!Array.isArray(coords[0][0])) {
-          // Polygon
-          const latlngArray = coords[0].map(ll=>L.latLng(ll[1],ll[0]));
-          return L.GeometryUtil.geodesicArea(latlngArray);
-        } else {
+      // Correct area calculation
+      function sumArea(coords) {
+        if (Array.isArray(coords[0][0][0])) {
           // MultiPolygon
-          return coords.reduce((sum,poly)=>sum+sumArea(poly),0);
+          return coords.reduce((sum, poly) => sum + sumArea(poly), 0);
+        } else {
+          // Polygon (may have holes, so sum outer and subtract inner)
+          return coords.reduce((sum, ring, index) => {
+            const latlngs = ring.map(ll => L.latLng(ll[1], ll[0]));
+            const ringArea = L.GeometryUtil.geodesicArea(latlngs);
+            return sum + (index === 0 ? ringArea : -ringArea); // outer ring positive, inner rings negative
+          }, 0);
         }
       }
 
       subdivisionAreas[f._id] = sumArea(f.geometry.coordinates);
     });
 
-    geojsonLayer = L.geoJSON(data,{onEachFeature}).addTo(map);
+    geojsonLayer = L.geoJSON(data, { onEachFeature }).addTo(map);
     updateStyles();
     updateScoreboard();
   });
