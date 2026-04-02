@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Boston Subdivisions Map</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+  <style>
+    body { margin: 0; }
+    #map { height: 100vh; }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+// Initialize map (centered roughly on Boston)
+var map = L.map('map').setView([42.3601, -71.0589], 11);
+
+// Base map
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 18
+}).addTo(map);
+
+// Track clicked features
+function onEachFeature(feature, layer) {
+
+  let clicked = false;
+
+  layer.setStyle({
+    color: "#3388ff",
+    weight: 1,
+    fillColor: "#3388ff",
+    fillOpacity: 0.5
+  });
+
+  // Hover effect
+  layer.on('mouseover', function () {
+    layer.setStyle({
+      weight: 2,
+      color: "white"
+    });
+  });
+
+  layer.on('mouseout', function () {
+    if (!clicked) {
+      layer.setStyle({
+        weight: 1,
+        color: "#3388ff"
+      });
+    }
+  });
+
+  // Click effect
+  layer.on('click', function () {
+    clicked = !clicked;
+
+    if (clicked) {
+      layer.setStyle({
+        fillColor: "black",
+        fillOpacity: 1
+      });
+    } else {
+      layer.setStyle({
+        fillColor: "#3388ff",
+        fillOpacity: 0.5
+      });
+    }
+  });
+}
+
+// Load GeoJSON
+fetch('boston_subdivisions.geojson')
+  .then(response => response.json())
+  .then(data => {
+    L.geoJSON(data, {
+      onEachFeature: onEachFeature
+    }).addTo(map);
+  });
+
+</script>
+
+</body>
+</html>
