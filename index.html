@@ -9,31 +9,113 @@
   <style>
     body { margin:0; }
     #map { height:100vh; width:100vw; }
+
     #title {
-      position:absolute; top:10px; left:50%; transform:translateX(-50%);
-      z-index:1000; font-family:sans-serif; font-size:18px; font-weight:bold;
-      background: rgba(255,255,255,0.8); padding: 8px 16px;
+      position:absolute;
+      top:10px;
+      left:50%;
+      transform:translateX(-50%);
+      z-index:1000;
+      font-family:sans-serif;
+      font-size:18px;
+      font-weight:bold;
+      background: rgba(255,255,255,0.8);
+      padding: 8px 16px;
     }
+
     #controls {
-      position: absolute; bottom: 20px; left: 20px; display:flex; gap:15px; align-items:center;
-      background: white; padding:10px; z-index:1000;
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      display:flex;
+      gap:15px;
+      align-items:center;
+      background: white;
+      padding:10px;
+      z-index:1000;
     }
+
     #colorPicker button {
-      padding:8px 14px; border:none; font-weight:bold; cursor:pointer;
-      box-shadow:0 2px 5px rgba(0,0,0,0.2); transition: transform 0.1s, box-shadow 0.1s; color:white;
+      padding:8px 14px;
+      border:none;
+      font-weight:bold;
+      cursor:pointer;
+      box-shadow:0 2px 5px rgba(0,0,0,0.2);
+      transition: transform 0.1s, box-shadow 0.1s;
+      color:white;
     }
-    #colorPicker button:hover { transform: translateY(-2px); box-shadow:0 4px 8px rgba(0,0,0,0.3); }
+    #colorPicker button:hover {
+      transform: translateY(-2px);
+      box-shadow:0 4px 8px rgba(0,0,0,0.3);
+    }
     button[data-color="red"] { background-color:red; }
     button[data-color="green"] { background-color:green; }
     button[data-color="yellow"] { background-color:yellow; color:#000; }
-    #activeColor { width:24px; height:24px; border-radius:50%; border:2px solid #333; background-color:black; transition: transform 0.2s; }
-    #scoreboard { position:absolute; top:20px; right:20px; background:white; padding:20px; max-width:250px; font-family:sans-serif; font-size:24px; z-index:1000; }
-    .tooltip-user { display:flex; align-items:center; }
-    .tooltip-user img { width:32px; height:32px; border-radius:50%; margin-right:8px; }
-    #resetBtn { padding:8px 12px; border:none; background-color:#34495e; color:white; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2); display:none; }
-    #resetBtn:hover { transform: translateY(-2px); box-shadow:0 4px 8px rgba(0,0,0,0.3); }
-    #signOutBtn { position:absolute; bottom:20px; right:20px; padding:8px 12px; border:none; background:#e74c3c; color:white; font-weight:bold; cursor:pointer; z-index:1000; display:none; }
-    #signOutBtn:hover { transform: translateY(-2px); box-shadow:0 4px 8px rgba(0,0,0,0.3); }
+
+    #activeColor {
+      width:24px;
+      height:24px;
+      border-radius:50%;
+      border:2px solid #333;
+      background-color:black;
+      transition: transform 0.2s;
+    }
+
+    #scoreboard {
+      position:absolute;
+      top:20px;
+      right:20px;
+      background:white;
+      padding:20px;
+      max-width:250px;
+      font-family:sans-serif;
+      font-size:18px;
+      z-index:1000;
+    }
+
+    .tooltip-user {
+      display:flex;
+      align-items:center;
+    }
+    .tooltip-user img {
+      width:32px;
+      height:32px;
+      border-radius:50%;
+      margin-right:8px;
+    }
+
+    #resetBtn {
+      padding:8px 12px;
+      border:none;
+      background-color:#34495e;
+      color:white;
+      font-weight:bold;
+      cursor:pointer;
+      box-shadow:0 2px 5px rgba(0,0,0,0.2);
+      display:none;
+    }
+    #resetBtn:hover {
+      transform: translateY(-2px);
+      box-shadow:0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    #signOutBtn {
+      position:absolute;
+      bottom:20px;
+      right:20px;
+      padding:8px 12px;
+      border:none;
+      background:#e74c3c;
+      color:white;
+      font-weight:bold;
+      cursor:pointer;
+      z-index:1000;
+      display:none;
+    }
+    #signOutBtn:hover {
+      transform: translateY(-2px);
+      box-shadow:0 4px 8px rgba(0,0,0,0.3);
+    }
   </style>
 </head>
 <body>
@@ -53,6 +135,7 @@
 </div>
 
 <div id="scoreboard"><strong>Scoreboard</strong><br><span id="areaBonus"></span></div>
+
 <button id="signOutBtn">Sign Out</button>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -93,15 +176,24 @@ let currentUser = null;
 let selectedColor = "red";
 let selected = {};
 let geojsonLayer = null;
-const subdivisionAreas = {}; // area per subdivision
+const subdivisionAreas = {}; // store area per subdivision
 
 // Auth
 onAuthStateChanged(auth, user => {
-  currentUser = user;
+  if(user){
+    if(!WHITELIST.includes(user.email)){
+      alert("You do not have access to edit the map, but you can spectate!");
+      auth.signOut();
+      return;
+    }
+    currentUser = user;
+  } else {
+    currentUser = null;
+  }
   updateUI();
 });
 
-// Sign in/out
+// Sign-In / Sign-Out
 document.getElementById("loginBtn").onclick = () => signInWithPopup(auth, provider).catch(console.error);
 document.getElementById("signOutBtn").onclick = () => auth.signOut();
 
@@ -122,16 +214,9 @@ function updateUI() {
   if(currentUser){
     document.getElementById("loginBtn").style.display="none";
     signOutBtn.style.display="block";
-
-    if(WHITELIST.includes(currentUser.email)){
-      document.getElementById("colorPicker").style.display="flex";
-      if(currentUser.email==="blatherstv@gmail.com") document.getElementById("resetBtn").style.display="block";
-      else document.getElementById("resetBtn").style.display="none";
-    } else {
-      document.getElementById("colorPicker").style.display="none";
-      document.getElementById("resetBtn").style.display="none";
-    }
-
+    document.getElementById("colorPicker").style.display="flex";
+    activeColorCircle.style.backgroundColor = selectedColor;
+    document.getElementById("resetBtn").style.display = currentUser.email==="blatherstv@gmail.com" ? "block":"none";
   } else {
     document.getElementById("loginBtn").style.display="block";
     signOutBtn.style.display="none";
@@ -155,11 +240,13 @@ onSnapshot(doc(db,"mapState","boston"), docSnap=>{
 
 // Click / Double-Click
 async function toggle(id){
-  if(!currentUser || !WHITELIST.includes(currentUser.email)){
-    alert("You do not have permission to modify the map.");
-    return;
-  }
-  selected[id]={ color:selectedColor, userName:currentUser.displayName, userId:currentUser.uid, photoURL:currentUser.photoURL };
+  if(!currentUser){ alert("Sign in first!"); return; }
+  selected[id]={
+    color:selectedColor,
+    userName:currentUser.displayName,
+    userId:currentUser.uid,
+    photoURL:currentUser.photoURL
+  };
   await setDoc(doc(db,"mapState","boston"),selected);
 }
 async function removeColor(id){
@@ -170,7 +257,7 @@ async function removeColor(id){
   }
 }
 
-// Reset
+// Reset Button
 document.getElementById("resetBtn").onclick=async()=>{ await setDoc(doc(db,"mapState","boston"),{}); }
 
 // Styles & Scoreboard
@@ -179,20 +266,24 @@ function updateStyles(){
   geojsonLayer.eachLayer(layer=>{
     const id=layer.feature._id;
     const data=selected[id];
-    layer.setStyle({ fillColor:data?data.color:"#3388ff", fillOpacity:0.5, color:"#3388ff", weight:1 });
+    layer.setStyle({
+      fillColor:data?data.color:"#3388ff",
+      fillOpacity:0.5,
+      color:"#3388ff",
+      weight:1
+    });
   });
 }
 
-function calculateAreaBonus(){
+function calculateAreaBonus() {
   if(!geojsonLayer) return null;
   const areaPerUser = {};
-  geojsonLayer.eachLayer(layer=>{
+  geojsonLayer.eachLayer(layer => {
     const id = layer.feature._id;
     const data = selected[id];
     if(!data) return;
     const area = subdivisionAreas[id] || 0;
-    if(!areaPerUser[data.userName]) areaPerUser[data.userName] = 0;
-    areaPerUser[data.userName] += area;
+    areaPerUser[data.userName] = (areaPerUser[data.userName] || 0) + area;
   });
   let topUser=null, maxArea=0;
   for(const [name, area] of Object.entries(areaPerUser)){
@@ -204,50 +295,68 @@ function calculateAreaBonus(){
 function updateScoreboard(){
   const scores={};
   Object.values(selected).forEach(item=>{
-    if(!scores[item.userName]) scores[item.userName]=0;
-    scores[item.userName]+=1;
+    scores[item.userName] = (scores[item.userName]||0)+1;
   });
   const board=document.getElementById("scoreboard");
   board.innerHTML="<strong>Scoreboard</strong><br>"+
-    Object.entries(scores).sort((a,b)=>b[1]-a[1]).map(([name,pts])=>`${name}: ${pts}`).join("<br>") +
-    "<br><br>Area Bonus: " + (calculateAreaBonus()||"");
+    Object.entries(scores)
+      .sort((a,b)=>b[1]-a[1])
+      .map(([name,pts])=>`${name}: ${pts}`)
+      .join("<br>")+
+    "<br><br>Area Bonus: "+(calculateAreaBonus()||"");
 }
 
-// Feature behavior
+// Feature Behavior
 function onEachFeature(feature,layer){
   const id=feature._id;
   layer.setStyle({fillColor:"#3388ff",fillOpacity:0.5,color:"#3388ff",weight:1});
+
   layer.on('mouseover',()=>{
     layer.setStyle({color:"white",weight:2});
     const data=selected[id];
     if(data){
-      layer.bindTooltip(`<div class="tooltip-user"><img src="${data.photoURL}" />${data.userName}</div>`,{permanent:false,direction:"top"}).openTooltip();
+      layer.bindTooltip(`<div class="tooltip-user">
+        <img src="${data.photoURL}" />
+        ${data.userName}
+      </div>`,{permanent:false,direction:"top"}).openTooltip();
     }
   });
-  layer.on('mouseout',()=>{ layer.setStyle({color:"#3388ff",weight:1}); layer.closeTooltip(); updateStyles(); });
+
+  layer.on('mouseout',()=>{
+    layer.setStyle({color:"#3388ff",weight:1});
+    layer.closeTooltip();
+    updateStyles();
+  });
+
   layer.on('click',()=>toggle(id));
   layer.on('dblclick',()=>removeColor(id));
 }
 
-// Load GeoJSON and compute subdivision areas
+// Load GeoJSON and calculate subdivision areas
 fetch('Boston Subdivisions.json')
   .then(res=>res.json())
   .then(data=>{
     data.features.forEach((f,i)=>{
-      f._id = i.toString();
-      // Compute area
-      const coords = f.geometry.coordinates;
-      function sumArea(c){ 
-        if(Array.isArray(c[0][0])) return c.reduce((sum, poly)=>sum+sumArea(poly),0);
-        return L.GeometryUtil.geodesicArea(c.map(ll=>L.latLng(ll[1],ll[0])));
+      f._id=i.toString();
+
+      function sumArea(coords){
+        if(!Array.isArray(coords[0][0])) {
+          // Polygon
+          const latlngArray = coords[0].map(ll=>L.latLng(ll[1],ll[0]));
+          return L.GeometryUtil.geodesicArea(latlngArray);
+        } else {
+          // MultiPolygon
+          return coords.reduce((sum,poly)=>sum+sumArea(poly),0);
+        }
       }
-      subdivisionAreas[f._id] = sumArea(coords);
+
+      subdivisionAreas[f._id] = sumArea(f.geometry.coordinates);
     });
+
     geojsonLayer = L.geoJSON(data,{onEachFeature}).addTo(map);
     updateStyles();
     updateScoreboard();
   });
-
 </script>
 </body>
 </html>
