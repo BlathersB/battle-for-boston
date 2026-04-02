@@ -46,6 +46,7 @@
       box-shadow:0 2px 5px rgba(0,0,0,0.2);
       transition: transform 0.1s, box-shadow 0.1s;
       color:white;
+      -webkit-text-stroke: 2px black;
     }
     #colorPicker button:hover {
       transform: translateY(-2px);
@@ -70,7 +71,7 @@
       position:absolute;
       top:20px;
       right:20px;
-      background:white;
+      background: rgba(255,255,255,0.8);
       padding:20px;
       max-width:250px;
       font-family:sans-serif;
@@ -113,8 +114,8 @@
       right:20px;
       padding:8px 12px;
       border:none;
-      background:#e74c3c;
-      color:white;
+      background:white;
+      color:black;
       font-weight:bold;
       cursor:pointer;
       z-index:1000;
@@ -142,7 +143,7 @@
   <button id="resetBtn">Reset Map</button>
 </div>
 
-<div id="scoreboard"><strong>Scoreboard</strong></div>
+<div id="scoreboard"><strong>Scoreboard</strong><br></div>
 <button id="signOutBtn">Sign Out</button>
 
 <!-- Leaflet JS -->
