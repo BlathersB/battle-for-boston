@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Boston Subdivisions Map</title>
+  <title>Boston Subdivisions</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
   <style>
@@ -17,52 +16,47 @@
 
 <div id="map"></div>
 
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-<script>
-// Initialize map (centered roughly on Boston)
-var map = L.map('map').setView([42.3601, -71.0589], 11);
+<script type="module">
+// 🔥 Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Base map
+// 👉 PASTE YOUR CONFIG HERE
+const firebaseConfig = {
+  apiKey: "YOUR_KEY",
+  authDomain: "YOUR_APP.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// 🗺️ Map
+const map = L.map('map').setView([42.3601, -71.0589], 11);
+
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 18
 }).addTo(map);
 
-// Track clicked features
-function onEachFeature(feature, layer) {
+let geojsonLayer;
+let selected = {};
 
-  let clicked = false;
+// 🔄 Real-time sync
+onSnapshot(doc(db, "mapState", "boston"), (docSnap) => {
+  if (docSnap.exists()) {
+    selected = docSnap.data();
+    updateStyles();
+  }
+});
 
-  layer.setStyle({
-    color: "#3388ff",
-    weight: 1,
-    fillColor: "#3388ff",
-    fillOpacity: 0.5
-  });
+// 🎨 Style updater
+function updateStyles() {
+  geojsonLayer.eachLayer(layer => {
+    const id = layer.feature._id;
 
-  // Hover effect
-  layer.on('mouseover', function () {
-    layer.setStyle({
-      weight: 2,
-      color: "white"
-    });
-  });
-
-  layer.on('mouseout', function () {
-    if (!clicked) {
-      layer.setStyle({
-        weight: 1,
-        color: "#3388ff"
-      });
-    }
-  });
-
-  // Click effect
-  layer.on('click', function () {
-    clicked = !clicked;
-
-    if (clicked) {
+    if (selected[id]) {
       layer.setStyle({
         fillColor: "black",
         fillOpacity: 1
@@ -76,13 +70,59 @@ function onEachFeature(feature, layer) {
   });
 }
 
-// Load GeoJSON
-fetch('boston_subdivisions.geojson')
-  .then(response => response.json())
+// 🖱️ Click handler
+async function toggle(id) {
+  selected[id] = !selected[id];
+  await setDoc(doc(db, "mapState", "boston"), selected);
+}
+
+// 📍 Feature behavior
+function onEachFeature(feature, layer) {
+
+  const id = feature._id;
+
+  layer.setStyle({
+    color: "#3388ff",
+    weight: 1,
+    fillColor: "#3388ff",
+    fillOpacity: 0.5
+  });
+
+  layer.on('mouseover', () => {
+    layer.setStyle({
+      color: "white",
+      weight: 2
+    });
+  });
+
+  layer.on('mouseout', () => {
+    layer.setStyle({
+      color: "#3388ff",
+      weight: 1
+    });
+    updateStyles();
+  });
+
+  layer.on('click', () => {
+    toggle(id);
+  });
+}
+
+// 📦 Load GeoJSON
+fetch('Boston Subdivisions.json')
+  .then(res => res.json())
   .then(data => {
-    L.geoJSON(data, {
+
+    // ✅ Assign IDs based on index
+    data.features.forEach((f, i) => {
+      f._id = i.toString();
+    });
+
+    geojsonLayer = L.geoJSON(data, {
       onEachFeature: onEachFeature
     }).addTo(map);
+
+    updateStyles();
   });
 
 </script>
