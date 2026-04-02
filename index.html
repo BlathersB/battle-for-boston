@@ -18,11 +18,10 @@
       transform:translateX(-50%);
       z-index:1000;
       font-family:sans-serif;
-      font-size:32px;
+      font-size:18px;
       font-weight:bold;
       background: rgba(255,255,255,0.8);
       padding: 8px 16px;
-      border-radius: 8px;
     }
 
     /* Controls container */
@@ -35,7 +34,6 @@
       align-items:center;
       background: white;
       padding:10px;
-      border-radius:8px;
       z-index:1000;
     }
 
@@ -74,7 +72,6 @@
       right:20px;
       background:white;
       padding:20px;
-      border-radius:8px;
       max-width:250px;
       font-family:sans-serif;
       font-size:24px;
@@ -96,7 +93,6 @@
     /* Reset button */
     #resetBtn {
       padding:8px 12px;
-      border-radius:6px;
       border:none;
       background-color:#34495e;
       color:white;
@@ -106,6 +102,25 @@
       display:none;
     }
     #resetBtn:hover {
+      transform: translateY(-2px);
+      box-shadow:0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    /* Sign-out button */
+    #signOutBtn {
+      position:absolute;
+      bottom:20px;
+      right:20px;
+      padding:8px 12px;
+      border:none;
+      background:#e74c3c;
+      color:white;
+      font-weight:bold;
+      cursor:pointer;
+      z-index:1000;
+      display:none;
+    }
+    #signOutBtn:hover {
       transform: translateY(-2px);
       box-shadow:0 4px 8px rgba(0,0,0,0.3);
     }
@@ -127,13 +142,12 @@
   <button id="resetBtn">Reset Map</button>
 </div>
 
-<div id="scoreboard"><strong>Scoreboard</strong><br><span id="areaBonus"></span></div>
+<div id="scoreboard"><strong>Scoreboard</strong></div>
+<button id="signOutBtn">Sign Out</button>
 
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<!-- Leaflet GeometryUtil Plugin -->
-<script src="https://cdn.jsdelivr.net/npm/leaflet-geometryutil@0.9.3/src/leaflet.geometryutil.min.js"></script>
-  
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -148,11 +162,21 @@ const firebaseConfig = {
   messagingSenderId: "77626799415",
   appId: "1:77626799415:web:29e0824275af1ccca616b2",
   measurementId: "G-Z9SVFKC4B2"
-};;
+};
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth();
 const provider = new GoogleAuthProvider();
+
+// ===== Whitelist =====
+const WHITELIST = [
+  "blatherstv@gmail.com",
+  "ethanby2000@gmail.com",
+  "player2@gmail.com",
+  "player3@gmail.com",
+  "player4@gmail.com",
+  "player5@gmail.com"
+];
 
 // ===== State =====
 let currentUser = null;
@@ -162,12 +186,24 @@ let geojsonLayer = null;
 
 // ===== Auth =====
 onAuthStateChanged(auth, user => {
-  currentUser = user;
+  if(user){
+    if(!WHITELIST.includes(user.email)){
+      alert("You do not have access to edit the map, but you can still spectate! Request permission from Blathers");
+      auth.signOut();
+      return;
+    }
+    currentUser = user;
+  } else {
+    currentUser = null;
+  }
   updateUI();
 });
 
 // Sign-In
 document.getElementById("loginBtn").onclick = () => signInWithPopup(auth, provider).catch(console.error);
+
+// Sign-Out
+document.getElementById("signOutBtn").onclick = () => auth.signOut();
 
 // ===== UI =====
 const colorButtons = document.querySelectorAll("#colorPicker button[data-color]");
@@ -182,13 +218,18 @@ colorButtons.forEach(btn => {
 });
 
 function updateUI() {
+  const signOutBtn = document.getElementById("signOutBtn");
   if(currentUser){
     document.getElementById("loginBtn").style.display="none";
+    signOutBtn.style.display="block";
     document.getElementById("colorPicker").style.display="flex";
     activeColorCircle.style.backgroundColor = selectedColor;
-    if(currentUser.email==="blatherstv@gmail.com"){
-      document.getElementById("resetBtn").style.display="block";
-    }
+    document.getElementById("resetBtn").style.display = currentUser.email==="blatherstv@gmail.com" ? "block" : "none";
+  } else {
+    document.getElementById("loginBtn").style.display="block";
+    signOutBtn.style.display="none";
+    document.getElementById("colorPicker").style.display="none";
+    document.getElementById("resetBtn").style.display="none";
   }
 }
 
@@ -225,9 +266,7 @@ async function removeColor(id){
 }
 
 // Reset Button
-document.getElementById("resetBtn").onclick=async()=>{
-  await setDoc(doc(db,"mapState","boston"),{});
-}
+document.getElementById("resetBtn").onclick=async()=>{ await setDoc(doc(db,"mapState","boston"),{}); }
 
 // ===== Styles & Scoreboard =====
 function updateStyles(){
@@ -243,6 +282,7 @@ function updateStyles(){
     });
   });
 }
+
 function updateScoreboard(){
   const scores={};
   Object.values(selected).forEach(item=>{
@@ -255,48 +295,6 @@ function updateScoreboard(){
       .sort((a,b)=>b[1]-a[1])
       .map(([name,pts])=>`${name}: ${pts}`)
       .join("<br>");
-  calculateAreaBonus();
-}
-
-// ===== Area Bonus =====
-function calculateAreaBonus() {
-  if (!geojsonLayer) return;
-
-  const areaPerUser = {};
-
-  geojsonLayer.eachLayer(layer => {
-    const id = layer.feature._id;
-    const data = selected[id];
-    if (!data) return;
-
-    let area = 0;
-
-    const latlngs = layer.getLatLngs();
-
-    // Handle both Polygon and MultiPolygon
-    function sumArea(coords) {
-      if (Array.isArray(coords[0][0])) {
-        // MultiPolygon
-        return coords.reduce((sum, poly) => sum + sumArea(poly), 0);
-      } else {
-        // Polygon
-        return L.GeometryUtil.geodesicArea(coords);
-      }
-    }
-
-    area = sumArea(latlngs);
-
-    if (!areaPerUser[data.userName]) areaPerUser[data.userName] = 0;
-    areaPerUser[data.userName] += area;
-  });
-
-  // Find top user
-  let topUser = null, maxArea = 0;
-  for (const [name, area] of Object.entries(areaPerUser)) {
-    if (area > maxArea) { maxArea = area; topUser = name; }
-  }
-
-  document.getElementById("areaBonus").innerText = topUser ? `Area Bonus: ${topUser}` : "";
 }
 
 // ===== Feature Behavior =====
@@ -327,13 +325,13 @@ function onEachFeature(feature,layer){
 
 // ===== Load GeoJSON =====
 fetch('Boston Subdivisions.json')
-.then(res=>res.json())
-.then(data=>{
-  data.features.forEach((f,i)=>f._id=i.toString());
-  geojsonLayer=L.geoJSON(data,{onEachFeature}).addTo(map);
-  updateStyles();
-  updateScoreboard();
-});
+  .then(res => res.json())
+  .then(data => {
+    data.features.forEach((f,i)=>f._id=i.toString());
+    geojsonLayer = L.geoJSON(data, { onEachFeature }).addTo(map);
+    updateStyles();
+    updateScoreboard();
+  });
 </script>
 </body>
 </html>
