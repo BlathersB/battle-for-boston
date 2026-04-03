@@ -126,6 +126,17 @@
       transform: translateY(-2px);
       box-shadow:0 4px 8px rgba(0,0,0,0.3);
     }
+
+    /* Style for the Lock Icon */
+    .lock-icon-container {
+      background: none;
+      border: none;
+    }
+    
+    .lock-icon-svg {
+      filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5));
+      pointer-events: none; /* Clicks pass through to the subdivision */
+    }
   </style>
 </head>
 <body>
@@ -156,7 +167,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// ===== Firebase Config =====
+// ===== Firebase Config (Keep yours here) =====
 const firebaseConfig = {
   apiKey: "AIzaSyAv9PMEqDgXaqpuHzAgjJDPthwYFZaxaRg",
   authDomain: "battle-for-boston.firebaseapp.com",
@@ -171,177 +182,161 @@ const db = getFirestore(app);
 const auth = getAuth();
 const provider = new GoogleAuthProvider();
 
-// ===== Whitelist =====
-const WHITELIST = [
-  "blatherstv@gmail.com",
-  "ethanby2000@gmail.com",
-  "kishore0299@gmail.com",
-  "player3@gmail.com",
-  "player4@gmail.com",
-  "player5@gmail.com"
-];
+const WHITELIST = ["blatherstv@gmail.com", "ethanby2000@gmail.com", "kishore0299@gmail.com"];
 
 // ===== State =====
 let currentUser = null;
 let selectedColor = "red";
 let selected = {};
 let geojsonLayer = null;
+let lockMarkers = L.layerGroup(); // Group to manage icons easily
 
-// ===== Auth =====
+// ===== Auth Logic =====
 onAuthStateChanged(auth, user => {
-  if(user){
-    if(!WHITELIST.includes(user.email)){
-      alert("You cannot edit the map as you are not a listed participant, but you can still spectate!");
-      auth.signOut();
-      return;
-    }
-    currentUser = user;
-  } else {
-    currentUser = null;
-  }
+  if(user && WHITELIST.includes(user.email)) currentUser = user;
+  else { currentUser = null; if(user) auth.signOut(); }
   updateUI();
 });
 
-// Sign-In
-document.getElementById("loginBtn").onclick = () => signInWithPopup(auth, provider).catch(console.error);
-
-// Sign-Out
+document.getElementById("loginBtn").onclick = () => signInWithPopup(auth, provider);
 document.getElementById("signOutBtn").onclick = () => auth.signOut();
 
-// ===== UI =====
+// ===== UI Logic =====
 const colorButtons = document.querySelectorAll("#colorPicker button[data-color]");
 const activeColorCircle = document.getElementById("activeColor");
+
 colorButtons.forEach(btn => {
   btn.onclick = () => {
     selectedColor = btn.dataset.color;
-    activeColorCircle.style.backgroundColor = selectedColor;
-    activeColorCircle.style.transform = "scale(1.3)";
-    setTimeout(()=>activeColorCircle.style.transform="scale(1)",200);
+    activeColorCircle.style.backgroundColor = selectedColor === "black" ? "black" : selectedColor;
   };
 });
 
 function updateUI() {
-  const signOutBtn = document.getElementById("signOutBtn");
-  if(currentUser){
-    document.getElementById("loginBtn").style.display="none";
-    signOutBtn.style.display="block";
-    document.getElementById("colorPicker").style.display="flex";
-    activeColorCircle.style.backgroundColor = selectedColor;
-    document.getElementById("resetBtn").style.display = currentUser.email==="blatherstv@gmail.com" ? "block" : "none";
+  const isAuth = !!currentUser;
+  document.getElementById("loginBtn").style.display = isAuth ? "none" : "block";
+  document.getElementById("signOutBtn").style.display = isAuth ? "block" : "none";
+  document.getElementById("colorPicker").style.display = isAuth ? "flex" : "none";
+  document.getElementById("resetBtn").style.display = (currentUser?.email === "blatherstv@gmail.com") ? "block" : "none";
+}
+
+// ===== Map Setup =====
+const map = L.map('map').setView([42.3601, -71.0589], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+lockMarkers.addTo(map); // Add the icon layer to map
+
+// ===== SVG Icon Definition =====
+const lockIcon = L.divIcon({
+  html: `<svg class="lock-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="black"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>`,
+  className: 'lock-icon-container',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9]
+});
+
+// ===== Core Logic =====
+async function toggle(id) {
+  if (!currentUser) return;
+  
+  const currentData = selected[id] || {};
+
+  if (selectedColor === "black") {
+    // Toggle the Lock status on/off without changing the owner
+    if (currentData.color) {
+      currentData.isLocked = !currentData.isLocked;
+    } else {
+      alert("Claim it first before locking!");
+      return;
+    }
   } else {
-    document.getElementById("loginBtn").style.display="block";
-    signOutBtn.style.display="none";
-    document.getElementById("colorPicker").style.display="none";
-    document.getElementById("resetBtn").style.display="none";
+    // Normal Claiming Logic
+    selected[id] = {
+      color: selectedColor,
+      userName: currentUser.displayName,
+      userId: currentUser.uid,
+      photoURL: currentUser.photoURL,
+      isLocked: false // Reset lock when someone else takes it
+    };
+  }
+  
+  await setDoc(doc(db, "mapState", "boston"), selected);
+}
+
+async function removeColor(id) {
+  if (selected[id]?.userId === currentUser?.uid) {
+    delete selected[id];
+    await setDoc(doc(db, "mapState", "boston"), selected);
   }
 }
 
-// ===== Map =====
-const map = L.map('map').setView([42.3601, -71.0589], 11);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
-
-// ===== Firestore Real-Time =====
-onSnapshot(doc(db,"mapState","boston"), docSnap=>{
-  if(docSnap.exists()){
+// ===== Real-time Sync =====
+onSnapshot(doc(db, "mapState", "boston"), docSnap => {
+  if (docSnap.exists()) {
     selected = docSnap.data();
     updateStyles();
     updateScoreboard();
   }
 });
 
-// ===== Click / Double-Click =====
-async function toggle(id){
-  if(!currentUser){ alert("Sign in with a whitelisted google account in order to edit the map."); return; }
-  selected[id]={
-    color:selectedColor,
-    userName:currentUser.displayName,
-    userId:currentUser.uid,
-    photoURL:currentUser.photoURL
-  };
-  await setDoc(doc(db,"mapState","boston"),selected);
-}
-async function removeColor(id){
-  const data=selected[id];
-  if(data && currentUser && data.userId===currentUser.uid){
-    delete selected[id];
-    await setDoc(doc(db,"mapState","boston"),selected);
-  }
-}
+function updateStyles() {
+  if (!geojsonLayer) return;
+  lockMarkers.clearLayers(); // Clear old icons
 
-// Reset Button
-document.getElementById("resetBtn").onclick=async()=>{ await setDoc(doc(db,"mapState","boston"),{}); }
+  geojsonLayer.eachLayer(layer => {
+    const id = layer.feature._id;
+    const data = selected[id];
 
-// ===== Styles & Scoreboard =====
-function updateStyles(){
-  if(!geojsonLayer) return;
-  geojsonLayer.eachLayer(layer=>{
-    const id=layer.feature._id;
-    const data=selected[id];
     layer.setStyle({
-      fillColor:data?data.color:"#3388ff",
-      fillOpacity:0.33,
-      color:"#ffffff",
-      weight:1
+      fillColor: data ? data.color : "#3388ff",
+      fillOpacity: 0.33,
+      color: "#ffffff",
+      weight: 1
     });
+
+    if (data?.isLocked) {
+      const center = layer.getBounds().getCenter();
+      L.marker(center, { icon: lockIcon, interactive: false }).addTo(lockMarkers);
+    }
   });
 }
 
-function updateScoreboard(){
-  const scores={};
-  Object.values(selected).forEach(item=>{
-    if(!scores[item.userName]) scores[item.userName]=0;
-    scores[item.userName]+=1;
+function updateScoreboard() {
+  const scores = {};
+  Object.values(selected).forEach(item => {
+    scores[item.userName] = (scores[item.userName] || 0) + 1;
   });
-  const board=document.getElementById("scoreboard");
-  board.innerHTML="<strong>Scoreboard</strong><br><br>"+
-    Object.entries(scores)
-      .sort((a,b)=>b[1]-a[1])
-      .map(([name,pts])=>`${name}: ${pts}`)
-      .join("<br>");
+  document.getElementById("scoreboard").innerHTML = "<strong>Scoreboard</strong><br><br>" +
+    Object.entries(scores).sort((a,b)=>b[1]-a[1]).map(([n,p])=>`${n}: ${p}`).join("<br>");
 }
 
-// ===== Feature Behavior =====
 function onEachFeature(feature, layer) {
   const id = feature._id;
-  const subName = feature.properties.name; // assuming your JSON has a 'name' field
-
-  layer.setStyle({ fillColor: "#3388ff", fillOpacity: 0.33, color: "#ffffff", weight: 1 });
-
-  layer.on('mouseover', () => {
-    layer.setStyle({ color: "#00fffb", weight: 3 });
-
-    const data = selected[id];
-    let tooltipContent = `<div><strong>${subName}</strong></div>`;
-    
-    if (data) {
-      tooltipContent += `<div class="tooltip-user">
-        <img src="${data.photoURL}" />
-        ${data.userName}
-      </div>`;
-    }
-
-    layer.bindTooltip(tooltipContent, { permanent: false, direction: "top" }).openTooltip();
+  layer.on({
+    mouseover: () => {
+      layer.setStyle({ color: "#00fffb", weight: 3 });
+      const data = selected[id];
+      let content = `<strong>${feature.properties.name || 'Subdivision'}</strong>`;
+      if (data) content += `<div class="tooltip-user"><img src="${data.photoURL}"/>${data.userName} ${data.isLocked ? '(LOCKED)' : ''}</div>`;
+      layer.bindTooltip(content).openTooltip();
+    },
+    mouseout: () => { 
+      layer.closeTooltip(); 
+      updateStyles(); 
+    },
+    click: () => toggle(id),
+    dblclick: () => removeColor(id)
   });
-
-  layer.on('mouseout', () => {
-    layer.setStyle({ color: "#3388ff", weight: 1 });
-    layer.closeTooltip();
-    updateStyles();
-  });
-
-  layer.on('click', () => toggle(id));
-  layer.on('dblclick', () => removeColor(id));
 }
 
-// ===== Load GeoJSON =====
+// ===== Initial Load =====
 fetch('Boston Subdivisions.json')
   .then(res => res.json())
   .then(data => {
-    data.features.forEach((f,i)=>f._id=i.toString());
+    data.features.forEach((f, i) => f._id = i.toString());
     geojsonLayer = L.geoJSON(data, { onEachFeature }).addTo(map);
     updateStyles();
-    updateScoreboard();
   });
+
+document.getElementById("resetBtn").onclick = async () => await setDoc(doc(db, "mapState", "boston"), {});
 </script>
 </body>
 </html>
