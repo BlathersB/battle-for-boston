@@ -54,7 +54,7 @@
       position:absolute; top:10px; right:10px;
       background: rgba(255,255,255,0.9); padding:12px;
       font-size:14px; z-index:1000; border-radius: 8px;
-      min-width: 120px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      min-width: 5vw; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
 
     #signOutBtn {
@@ -423,7 +423,7 @@ function showCardTooltip(card) {
     
     // Stars
     const starContainer = document.getElementById('tt-stars');
-    starContainer.innerHTML = card.stars ? '★'.repeat(card.stars) : 'Powerup';
+    starContainer.innerHTML = card.stars ? `<div class="special-tag">Powerup ${'★'.repeat(card.stars)}</div>` : '';
     
     // Boolean tag
     const tagContainer = document.getElementById('tt-tag');
@@ -463,7 +463,7 @@ function renderHand() {
 
 document.getElementById('drawBtn').onclick = async () => {
     if (!currentUser) return alert("Sign in first!");
-    if (userHand.length >= 7) return alert("Hand is full!");
+    if (userHand.length >= 7) return alert("Hand is full");
     if (challenges.length === 0) return alert("Challenges still loading...");
 
     const randomCard = challenges[Math.floor(Math.random() * challenges.length)];
@@ -472,7 +472,7 @@ document.getElementById('drawBtn').onclick = async () => {
 };
 
 document.getElementById('discardBtn').onclick = async () => {
-    if (selectedSlotIndex === null) return alert("Select a card first!");
+    if (selectedSlotIndex === null) return alert("Select a card to discard it");
     userHand.splice(selectedSlotIndex, 1);
     selectedSlotIndex = null;
     document.getElementById('card-tooltip').style.display = 'none';
