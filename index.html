@@ -7,8 +7,15 @@
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
   <style>
-    body { margin:0; overflow: hidden; font-family: sans-serif; background: #eee; }
+    body { margin:0; overflow: hidden; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #eee; }
     #map { height:100vh; width:100vw; z-index: 1; }
+
+    /* --- GLOBAL BOUNCE EFFECT --- */
+    /* Applies to all buttons and card slots when pressed */
+    button:active, .card-slot:active, #drawer-tab:active {
+      transform: translateY(-4px) scale(1.02) !important;
+      transition: transform 0.1s ease-out;
+    }
 
     /* UI Elements */
     #title {
@@ -30,18 +37,17 @@
     #colorPicker button {
       padding:10px 14px; border:none; font-weight:bold; cursor:pointer;
       color:white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); border-radius: 6px;
+      transition: transform 0.2s ease;
     }
     button[data-color="red"] { background-color:red; }
     button[data-color="green"] { background-color:green; }
     button[data-color="yellow"] { background-color:yellow; color:#000; text-shadow:none; }
     button[data-color="black"] { background-color:#444; }
 
-    /* Centered Color Ring */
     #activeColor { 
       width:22px; height:22px; border-radius:50%; 
       border:3px solid #333; background-color: red;
-      box-sizing: border-box;
-      display: inline-block;
+      box-sizing: border-box; flex-shrink: 0;
     }
 
     #scoreboard {
@@ -61,10 +67,10 @@
     /* --- MOBILE DECK DRAWER --- */
     #card-drawer {
       position: fixed;
-      left: -75vw; 
+      left: -85vw; 
       top: 15vh;
-      width: 75vw;
-      height: 32vh;
+      width: 85vw;
+      height: 40vh;
       background: #fdfdfd;
       box-shadow: 5px 0 15px rgba(0,0,0,0.3);
       z-index: 2000;
@@ -105,49 +111,90 @@
       align-items: center;
     }
 
+    /* --- SLEEK FIXED-WIDTH CARD STYLING --- */
     .card-slot {
-      min-width: 115px;
-      height: 145px;
-      border: 2px dashed #ccc;
-      border-radius: 10px;
-      background: #f9f9f9;
+      min-width: 130px;
+      max-width: 130px;
+      height: 160px;
+      background: #ffffff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 10px;
-      font-size: 11px;
+      padding: 12px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
       flex-shrink: 0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      position: relative;
       box-sizing: border-box;
-      color: #999;
       overflow: hidden;
     }
 
     .card-slot.occupied {
-      border-style: solid;
-      border-color: #2c3e50;
-      background: white;
-      color: #333;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      border: 2px solid #2c3e50;
+      color: #2c3e50;
     }
 
     .card-slot.selected {
-      transform: translateY(-15px);
-      border-color: #e74c3c;
-      background: #fff8f8;
-      box-shadow: 0 10px 20px rgba(231, 76, 60, 0.25);
+      border-color: #3498db;
+      background: #f0f7ff;
+      box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
     }
 
-    #drawer-controls {
-      display: flex;
-      gap: 10px;
-      margin-top: 5px;
+    .card-title {
+      font-weight: 800;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      word-wrap: break-word; /* Fix: text wraps down */
+      overflow-wrap: break-word;
+      width: 100%;
+      line-height: 1.2;
     }
+
+    /* --- CARD TOOLTIP OVERLAY --- */
+    #card-tooltip {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 25px;
+      border-radius: 20px;
+      box-shadow: 0 15px 50px rgba(0,0,0,0.4);
+      z-index: 3000;
+      width: 80%;
+      max-width: 320px;
+      display: none; 
+      text-align: center;
+      border: 3px solid #2c3e50;
+    }
+
+    #card-tooltip h3 { margin: 0 0 10px 0; font-size: 18px; color: #2c3e50; text-transform: uppercase; }
+    #card-tooltip p { font-size: 14px; color: #444; line-height: 1.5; margin-bottom: 15px; }
+    
+    #tooltip-close { 
+      background: #2c3e50; color: white; border: none; 
+      padding: 10px 20px; border-radius: 8px; cursor: pointer; 
+      font-weight: bold; width: 100%;
+    }
+
+    .star-rating { color: #f1c40f; font-size: 18px; margin-bottom: 10px; letter-spacing: 2px; }
+    
+    .special-tag {
+      background: #e74c3c; color: white; font-size: 10px;
+      padding: 4px 10px; border-radius: 12px; margin-bottom: 15px;
+      font-weight: bold; display: inline-block;
+    }
+
+    #drawer-controls { display: flex; gap: 10px; margin-top: 10px; }
 
     #drawer-controls button {
-      flex: 1; padding: 10px; border: none; border-radius: 8px;
+      flex: 1; padding: 12px; border: none; border-radius: 8px;
       font-weight: bold; cursor: pointer; color: white; font-size: 13px;
     }
 
@@ -178,12 +225,20 @@
 
 <div id="card-drawer">
     <div id="drawer-tab" onclick="toggleDrawer()">DECK</div>
-    <h4 style="margin:0; color: #34495e;">Your Challenges</h4>
+    <h4 style="margin:0 0 5px 0; color: #34495e; font-size: 14px;">Your Challenges</h4>
     <div id="deck-container"></div>
     <div id="drawer-controls">
         <button id="drawBtn">Draw Card</button>
         <button id="discardBtn">Discard Selected</button>
     </div>
+</div>
+
+<div id="card-tooltip">
+    <h3 id="tt-title"></h3>
+    <div id="tt-stars" class="star-rating"></div>
+    <p id="tt-desc"></p>
+    <div id="tt-tag"></div>
+    <button id="tooltip-close" onclick="closeTooltip()">Close</button>
 </div>
 
 <button id="signOutBtn" style="display:none;">Sign Out</button>
@@ -218,9 +273,10 @@ let selectedColor = "red";
 let selected = {};
 let geojsonLayer = null;
 let lockMarkers = L.layerGroup();
-let challenges = []; // Wait for JSON fetch
+let challenges = []; 
 let userHand = []; 
 let selectedSlotIndex = null;
+let challengeLoadError = false;
 
 // --- Auth & Data Sync ---
 onAuthStateChanged(auth, user => {
@@ -317,8 +373,7 @@ function updateStyles() {
 function updateScoreboard() {
   const scores = {};
   Object.values(selected).forEach(item => { scores[item.userName] = (scores[item.userName] || 0) + 1; });
-  
-  document.getElementById("scoreboard").innerHTML = "<strong>Scoreboard</strong><hr style='border:0; border-top:1px solid #ccc; margin:5px 0;'>" +
+  document.getElementById("scoreboard").innerHTML = "<strong>Scoreboard</strong><hr style='border:0; border-top:1px solid #ccc; margin:5px 0 10px 0;'>" +
     Object.entries(scores).sort((a,b)=>b[1]-a[1]).map(([n,p])=>`${n}: ${p}`).join("<br>");
 }
 
@@ -336,19 +391,46 @@ function onEachFeature(feature, layer) {
   });
 }
 
-// --- DECK SYSTEM & DATA FETCH ---
+// --- DECK SYSTEM ---
 
-// Fetch Challenges from JSON file
 fetch('challenges.json')
-    .then(res => res.json())
+    .then(res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+    })
     .then(data => {
         challenges = data;
-        console.log("Challenges loaded successfully from JSON!");
+        console.log("Challenges loaded successfully!");
     })
-    .catch(err => console.error("Error loading challenges.json:", err));
-
+    .catch(err => {
+        challengeLoadError = true;
+        console.error("Critical Error: Could not load challenges.json.", err);
+    });
 
 window.toggleDrawer = () => document.getElementById('card-drawer').classList.toggle('open');
+
+// Tooltip Management
+window.closeTooltip = () => {
+    document.getElementById('card-tooltip').style.display = 'none';
+    selectedSlotIndex = null;
+    renderHand();
+};
+
+function showCardTooltip(card) {
+    const tt = document.getElementById('card-tooltip');
+    document.getElementById('tt-title').innerText = card.title;
+    document.getElementById('tt-desc').innerText = card.description || "No rules provided for this challenge.";
+    
+    // Stars
+    const starContainer = document.getElementById('tt-stars');
+    starContainer.innerHTML = card.stars ? '★'.repeat(card.stars) : '';
+    
+    // Boolean tag
+    const tagContainer = document.getElementById('tt-tag');
+    tagContainer.innerHTML = card.twoTerritories ? '<div class="special-tag">2X TERRITORY</div>' : '';
+    
+    tt.style.display = 'block';
+}
 
 function renderHand() {
     const container = document.getElementById('deck-container');
@@ -362,19 +444,18 @@ function renderHand() {
         
         if (card) {
             slot.classList.add('occupied');
-            const dbl = card.twoTerritories ? '<br><strong>[2X]</strong>' : '';
-            slot.innerHTML = `<div><strong>${card.title}</strong>${dbl}</div>`;
-            slot.title = `${card.description}`; // Tooltip
-            
             if (selectedSlotIndex === i) slot.classList.add('selected');
+
+            slot.innerHTML = `<div class="card-title">${card.title}</div>`;
             
             slot.onclick = (e) => {
                 e.stopPropagation();
-                selectedSlotIndex = (selectedSlotIndex === i) ? null : i;
+                selectedSlotIndex = i;
                 renderHand();
+                showCardTooltip(card);
             };
         } else {
-            slot.innerHTML = 'Empty';
+            slot.innerHTML = '<span style="color:#ccc; font-size:9px;">EMPTY</span>';
         }
         container.appendChild(slot);
     }
@@ -383,19 +464,18 @@ function renderHand() {
 document.getElementById('drawBtn').onclick = async () => {
     if (!currentUser) return alert("Sign in first!");
     if (userHand.length >= 7) return alert("Hand is full!");
-    if (challenges.length === 0) return alert("Still loading challenges, give it a second!");
+    if (challenges.length === 0) return alert("Challenges still loading...");
 
     const randomCard = challenges[Math.floor(Math.random() * challenges.length)];
     userHand.push(randomCard);
-    
     await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand });
 };
 
 document.getElementById('discardBtn').onclick = async () => {
     if (selectedSlotIndex === null) return alert("Select a card first!");
-    
     userHand.splice(selectedSlotIndex, 1);
     selectedSlotIndex = null;
+    document.getElementById('card-tooltip').style.display = 'none';
     await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand });
 };
 
@@ -407,7 +487,7 @@ fetch('Boston Subdivisions.json')
         geojsonLayer = L.geoJSON(data, { onEachFeature }).addTo(map);
         updateStyles();
     })
-    .catch(err => console.error("Error loading Boston Subdivisions.json:", err));
+    .catch(err => console.error("Error loading map JSON:", err));
 
 document.getElementById("resetBtn").onclick = async () => {
     if(confirm("Clear the entire map?")) await setDoc(doc(db, "mapState", "boston"), {});
