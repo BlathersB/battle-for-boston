@@ -412,7 +412,7 @@ window.toggleDrawer = () => document.getElementById('card-drawer').classList.tog
 // Tooltip Management
 window.closeTooltip = () => {
     document.getElementById('card-tooltip').style.display = 'none';
-    selectedSlotIndex = null;
+    //selectedSlotIndex = null;
     renderHand();
 };
 
@@ -423,11 +423,11 @@ function showCardTooltip(card) {
     
     // Stars
     const starContainer = document.getElementById('tt-stars');
-    starContainer.innerHTML = card.stars ? '★'.repeat(card.stars) : '';
+    starContainer.innerHTML = card.stars ? '★'.repeat(card.stars) : 'Powerup';
     
     // Boolean tag
     const tagContainer = document.getElementById('tt-tag');
-    tagContainer.innerHTML = card.twoTerritories ? '<div class="special-tag">2X TERRITORY</div>' : '';
+    tagContainer.innerHTML = card.twoTerritories ? '<div class="special-tag">CLAIM TWO NEIGHBORHOODS</div>' : '';
     
     tt.style.display = 'block';
 }
