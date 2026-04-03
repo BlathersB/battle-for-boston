@@ -137,6 +137,100 @@
       filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5));
       pointer-events: none; /* Clicks pass through to the subdivision */
     }
+
+    /* Card Drawer Styles */
+    #drawer-tab {
+        position: fixed;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 30px;
+        height: 80px;
+        background: #34495e;
+        color: white;
+        writing-mode: vertical-rl;
+        text-align: center;
+        line-height: 30px;
+        cursor: pointer;
+        z-index: 1001;
+        border-radius: 0 8px 8px 0;
+        font-family: sans-serif;
+        font-weight: bold;
+    }
+    
+    #card-drawer {
+        position: fixed;
+        left: -450px; /* Hidden by default */
+        top: 0;
+        width: 450px;
+        height: 100vh;
+        background: white;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+        z-index: 1002;
+        transition: left 0.3s ease;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        font-family: sans-serif;
+    }
+    
+    #card-drawer.open { left: 0; }
+    
+    #deck-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 20px;
+    }
+    
+    .card-slot {
+        width: 130px;
+        height: 180px;
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        background: rgba(0,0,0,0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 5px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: transform 0.2s, opacity 0.2s;
+        opacity: 0.3; /* Default opacity for empty slots */
+    }
+    
+    .card-slot.occupied {
+        border-style: solid;
+        border-color: #34495e;
+        background: white;
+        opacity: 1; /* Full opacity when card exists */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .card-slot.selected {
+        transform: translateY(-15px); /* Visual signal for selection */
+        border-color: #e74c3c;
+    }
+    
+    #drawer-controls {
+        margin-top: auto;
+        display: flex;
+        gap: 10px;
+        padding-bottom: 20px;
+    }
+    
+    #drawer-controls button {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    
+    #drawBtn { background: #2ecc71; color: white; }
+    #discardBtn { background: #e74c3c; color: white; }
   </style>
 </head>
 <body>
@@ -157,6 +251,16 @@
 </div>
 
 <div id="scoreboard"><strong>Scoreboard</strong></div>
+<div id="drawer-tab" onclick="toggleDrawer()">DECK</div>
+<div id="card-drawer">
+    <h3>Your Hand</h3>
+    <div id="deck-container">
+        </div>
+    <div id="drawer-controls">
+        <button id="drawBtn">Draw Card</button>
+        <button id="discardBtn">Discard Selected</button>
+    </div>
+</div>
 <button id="signOutBtn">Sign Out</button>
 
 <!-- Leaflet JS -->
@@ -193,8 +297,14 @@ let lockMarkers = L.layerGroup(); // Group to manage icons easily
 
 // ===== Auth Logic =====
 onAuthStateChanged(auth, user => {
-  if(user && WHITELIST.includes(user.email)) currentUser = user;
-  else { currentUser = null; if(user) auth.signOut(); }
+  if(user && WHITELIST.includes(user.email)){
+    currentUser = user;
+    setupDeckSync(user); // <--- Add this line here
+  } else {
+    currentUser = null;
+    setupDeckSync(null); // <--- Add this line here
+    if(user) auth.signOut();
+  }
   updateUI();
 });
 
@@ -325,6 +435,135 @@ function onEachFeature(feature, layer) {
     click: () => toggle(id),
     dblclick: () => removeColor(id)
   });
+}
+
+// ===== Challenge/Deck State =====
+let challenges = [];
+let userHand = []; 
+let selectedSlotIndex = null;
+
+// 1. Fetch the Challenges JSON
+fetch('challenges.json')
+    .then(res => res.json())
+    .then(data => {
+        challenges = data;
+        console.log("Challenges loaded:", challenges.length);
+    })
+    .catch(err => console.error("Error loading challenges.json:", err));
+
+// 2. Module-safe Drawer Toggle (Attaches to 'window' so HTML can see it)
+window.toggleDrawer = () => {
+    const drawer = document.getElementById('card-drawer');
+    drawer.classList.toggle('open');
+};
+
+// 3. Render the Hand to the UI
+function renderHand() {
+    const deckContainer = document.getElementById('deck-container');
+    if (!deckContainer) return;
+    
+    deckContainer.innerHTML = '';
+    
+    for (let i = 0; i < 7; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'card-slot';
+        const card = userHand[i];
+
+        if (card) {
+            slot.classList.add('occupied');
+            
+            // Build the Display Info
+            const stars = card.stars === 1 ? '⭐' : card.stars === 2 ? '⭐⭐' : '';
+            const double = card.twoTerritories ? '<br><strong>[2X]</strong>' : '';
+            
+            slot.innerHTML = `<div><strong>${card.title}</strong>${double}</div>`;
+            
+            // Tooltip Content (Title attribute shows on hover)
+            slot.title = `${card.description}\n\n${stars} ${card.twoTerritories ? '(2X Territories)' : ''}`;
+
+            // If this specific slot is selected, add the class
+            if (selectedSlotIndex === i) {
+                slot.classList.add('selected');
+            }
+
+            // Click to select/unselect
+            slot.onclick = () => {
+                selectedSlotIndex = (selectedSlotIndex === i) ? null : i;
+                renderHand();
+            };
+        } else {
+            slot.innerHTML = 'Empty Slot';
+            slot.onclick = null;
+        }
+        
+        deckContainer.appendChild(slot);
+    }
+}
+
+// 4. Draw Card Logic
+document.getElementById('drawBtn').onclick = async () => {
+    if (!currentUser) {
+        alert("Please sign in to draw cards!");
+        return;
+    }
+    if (userHand.length >= 7) {
+        alert("Your hand is full! Discard a card to draw a new one.");
+        return;
+    }
+    if (challenges.length === 0) {
+        alert("Challenges are still loading...");
+        return;
+    }
+
+    const randomCard = challenges[Math.floor(Math.random() * challenges.length)];
+    userHand.push(randomCard);
+    await saveHandToFirebase();
+};
+
+// 5. Discard Card Logic
+document.getElementById('discardBtn').onclick = async () => {
+    if (selectedSlotIndex === null) {
+        alert("Tap a card in your hand first to select it for discarding.");
+        return;
+    }
+    
+    // Remove the selected card from the array
+    userHand.splice(selectedSlotIndex, 1);
+    selectedSlotIndex = null; // Clear selection
+    await saveHandToFirebase();
+};
+
+// 6. Persistence: Save to Firestore
+async function saveHandToFirebase() {
+    if (currentUser) {
+        try {
+            await setDoc(doc(db, "userDecks", currentUser.uid), { 
+                hand: userHand,
+                lastUpdated: new Date()
+            });
+        } catch (e) {
+            console.error("Error saving deck: ", e);
+        }
+    }
+    renderHand();
+}
+
+// 7. Integration: Add this to your existing onAuthStateChanged!
+// (I'm providing the logic here - ensure it's called inside your auth observer)
+function setupDeckSync(user) {
+    if (user) {
+        onSnapshot(doc(db, "userDecks", user.uid), (docSnap) => {
+            if (docSnap.exists()) {
+                userHand = docSnap.data().hand || [];
+            } else {
+                userHand = [];
+            }
+            renderHand();
+        });
+    } else {
+        userHand = [];
+        renderHand();
+    }
 }
 
 // ===== Initial Load =====
