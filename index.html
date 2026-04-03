@@ -279,8 +279,8 @@ function updateStyles(){
     const data=selected[id];
     layer.setStyle({
       fillColor:data?data.color:"#3388ff",
-      fillOpacity:0.5,
-      color:"#3388ff",
+      fillOpacity:0.33,
+      color:"#ffffff",
       weight:1
     });
   });
@@ -305,10 +305,10 @@ function onEachFeature(feature, layer) {
   const id = feature._id;
   const subName = feature.properties.name; // assuming your JSON has a 'name' field
 
-  layer.setStyle({ fillColor: "#3388ff", fillOpacity: 0.5, color: "#3388ff", weight: 1 });
+  layer.setStyle({ fillColor: "#3388ff", fillOpacity: 0.33, color: "#ffffff", weight: 1 });
 
   layer.on('mouseover', () => {
-    layer.setStyle({ color: "white", weight: 2 });
+    layer.setStyle({ color: "#00fffb", weight: 3 });
 
     const data = selected[id];
     let tooltipContent = `<div><strong>${subName}</strong></div>`;
