@@ -3,217 +3,150 @@
 <head>
   <title>Jet Lag Battle for Boston</title>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
   <style>
-    body { margin:0; overflow: hidden; }
-    #map { height:100vh; width:100vw; }
+    body { margin:0; overflow: hidden; font-family: sans-serif; }
+    #map { height:100vh; width:100vw; z-index: 1; }
 
-    /* Top title */
+    /* UI Elements */
     #title {
-      position:absolute;
-      top:10px;
-      left:50%;
-      transform:translateX(-50%);
-      z-index:1000;
-      font-family:sans-serif;
-      font-size:18px;
-      font-weight:bold;
-      background: rgba(255,255,255,0.8);
-      padding: 8px 16px;
-      border-radius: 5px;
-    }
-
-    /* Controls container */
-    #controls {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      display:flex;
-      gap:15px;
-      align-items:center;
-      background: white;
-      padding:10px;
-      z-index:1000;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    }
-
-    /* Color Buttons */
-    #colorPicker button {
-      padding:8px 14px;
-      border:none;
-      font-weight:bold;
-      cursor:pointer;
-      box-shadow:0 2px 5px rgba(0,0,0,0.2);
-      transition: transform 0.1s, box-shadow 0.1s;
-      color:white;
-      text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.65);
-      border-radius: 4px;
-    }
-    #colorPicker button:hover {
-      transform: translateY(-2px);
-      box-shadow:0 4px 8px rgba(0,0,0,0.3);
-    }
-    button[data-color="red"] { background-color:red; }
-    button[data-color="green"] { background-color:green; }
-    button[data-color="yellow"] { background-color:yellow; color:#000; }
-    button[data-color="black"] { background-color:gray; color:#000; }
-
-    #activeColor {
-      width:24px;
-      height:24px;
-      border-radius:50%;
-      border:2px solid #333;
-      background-color:red;
-      transition: transform 0.2s;
-    }
-
-    #scoreboard {
-      position:absolute;
-      top:20px;
-      right:20px;
-      background: rgba(255,255,255,0.8);
-      padding:20px;
-      min-width:150px;
-      font-family:sans-serif;
-      font-size:20px;
-      z-index:1000;
-      border-radius: 8px;
-    }
-
-    .tooltip-user { display:flex; align-items:center; }
-    .tooltip-user img { width:32px; height:32px; border-radius:50%; margin-right:8px; }
-
-    #resetBtn {
-      padding:8px 12px;
-      border:none;
-      background-color:#34495e;
-      color:white;
-      font-weight:bold;
-      cursor:pointer;
-      display:none;
-      border-radius: 4px;
-    }
-
-    #signOutBtn {
-      position:absolute;
-      bottom:20px;
-      right:20px;
-      padding:8px 12px;
-      border:none;
-      background:white;
-      color:black;
-      font-weight:bold;
-      cursor:pointer;
-      z-index:1000;
-      display:none;
-      border-radius: 4px;
+      position:absolute; top:10px; left:50%; transform:translateX(-50%);
+      z-index:1000; font-size:18px; font-weight:bold;
+      background: rgba(255,255,255,0.9); padding: 8px 16px; border-radius: 20px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
 
-    .lock-icon-container { background: none; border: none; }
-    .lock-icon-svg { filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5)); pointer-events: none; }
-
-    /* --- CARD DRAWER ADJUSTMENTS --- */
-    
-    #card-drawer {
-        position: fixed;
-        left: -26vw; /* Start hidden (25% width + border/padding) */
-        top: 25vh;   /* Center vertically (100 - 50 / 2) */
-        width: 25vw; /* 25% of screen width */
-        height: 50vh; /* 50% of screen height */
-        background: white;
-        box-shadow: 2px 0 10px rgba(0,0,0,0.3);
-        z-index: 1002;
-        transition: left 0.3s ease-out;
-        padding: 15px;
-        display: flex;
-        flex-direction: column;
-        font-family: sans-serif;
-        border-radius: 0 15px 15px 0;
+    #controls {
+      position: absolute; bottom: 20px; left: 10px;
+      display:flex; gap:10px; align-items:center;
+      background: white; padding:10px; z-index:1000;
+      border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     }
-    
+
+    #colorPicker button {
+      padding:10px; border:none; font-weight:bold; cursor:pointer;
+      color:white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); border-radius: 4px;
+    }
+    button[data-color="red"] { background-color:red; }
+    button[data-color="green"] { background-color:green; }
+    button[data-color="yellow"] { background-color:yellow; color:#000; text-shadow:none; }
+    button[data-color="black"] { background-color:#444; }
+
+    #activeColor { width:20px; height:20px; border-radius:50%; border:2px solid #333; }
+
+    #scoreboard {
+      position:absolute; top:10px; right:10px;
+      background: rgba(255,255,255,0.9); padding:10px;
+      font-size:14px; z-index:1000; border-radius: 8px;
+    }
+
+    #signOutBtn {
+      position:absolute; bottom:20px; right:10px;
+      padding:8px 12px; border:none; background:white;
+      font-weight:bold; cursor:pointer; z-index:1000;
+      border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    /* --- MOBILE DECK DRAWER --- */
+    #card-drawer {
+      position: fixed;
+      left: -75vw; /* Completely hidden */
+      top: 15vh;
+      width: 75vw;
+      height: 30vh;
+      background: #f8f9fa;
+      box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+      z-index: 2000;
+      transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 0 15px 15px 0;
+      box-sizing: border-box;
+    }
+
     #card-drawer.open { left: 0; }
 
-    /* The Tab is now attached to the side of the drawer */
     #drawer-tab {
-        position: absolute;
-        right: -30px; /* Stick out from the right edge of the drawer */
-        top: 50%;
-        transform: translateY(-50%);
-        width: 30px;
-        height: 80px;
-        background: #34495e;
-        color: white;
-        writing-mode: vertical-rl;
-        text-align: center;
-        line-height: 30px;
-        cursor: pointer;
-        border-radius: 0 8px 8px 0;
-        font-weight: bold;
+      position: absolute;
+      right: -35px; /* Only the tab shows */
+      top: 20px;
+      width: 35px;
+      height: 100px;
+      background: #34495e;
+      color: white;
+      writing-mode: vertical-rl;
+      text-align: center;
+      line-height: 35px;
+      cursor: pointer;
+      border-radius: 0 10px 10px 0;
+      font-weight: bold;
+      box-shadow: 3px 0 5px rgba(0,0,0,0.2);
     }
-    
+
     #deck-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 10px;
-        overflow-y: auto; /* Scroll if cards exceed 50vh */
-        padding: 5px;
+      display: flex;
+      flex-direction: row;
+      gap: 12px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 15px 5px;
+      flex: 1;
+      -webkit-overflow-scrolling: touch;
     }
-    
+
     .card-slot {
-        width: 80px; /* Scaled down for 25% width window */
-        height: 110px;
-        border: 2px dashed #ccc;
-        border-radius: 6px;
-        background: rgba(0,0,0,0.05);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: 4px;
-        font-size: 10px;
-        cursor: pointer;
-        transition: transform 0.2s, opacity 0.2s;
-        opacity: 0.3;
+      min-width: 110px;
+      height: 150px;
+      border: 2px dashed #bbb;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 10px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      opacity: 0.3;
+      flex-shrink: 0;
+      box-sizing: border-box;
     }
-    
+
     .card-slot.occupied {
-        border-style: solid;
-        border-color: #34495e;
-        background: white;
-        opacity: 1;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border-style: solid;
+      border-color: #34495e;
+      background: white;
+      opacity: 1;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-    
+
     .card-slot.selected {
-        transform: translateY(-10px);
-        border-color: #e74c3c;
-        background: #fffafa;
+      transform: translateY(-15px);
+      border-color: #e74c3c;
+      background: #fff5f5;
+      box-shadow: 0 8px 15px rgba(231, 76, 60, 0.3);
     }
-    
+
     #drawer-controls {
-        margin-top: auto;
-        display: flex;
-        gap: 10px;
-        padding: 10px 0;
+      display: flex;
+      gap: 10px;
+      padding-top: 10px;
     }
-    
+
     #drawer-controls button {
-        flex: 1;
-        padding: 8px;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        font-weight: bold;
-        font-size: 12px;
+      flex: 1; padding: 10px; border: none; border-radius: 5px;
+      font-weight: bold; cursor: pointer; color: white;
     }
-    
-    #drawBtn { background: #2ecc71; color: white; }
-    #discardBtn { background: #e74c3c; color: white; }
+
+    #drawBtn { background: #2ecc71; }
+    #discardBtn { background: #e74c3c; }
+
+    /* Map Icons */
+    .lock-icon-svg { filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5)); pointer-events: none; }
   </style>
 </head>
 <body>
@@ -223,29 +156,29 @@
 
 <div id="controls">
   <button id="loginBtn">Sign in with Google</button>
-  <div id="colorPicker" style="display:none; gap:10px;">
+  <div id="colorPicker" style="display:none; gap:8px;">
     <button data-color="red">Red</button>
     <button data-color="green">Green</button>
     <button data-color="yellow">Yellow</button>
     <button data-color="black">Lock</button>
     <div id="activeColor"></div>
   </div>
-  <button id="resetBtn">Reset Map</button>
+  <button id="resetBtn" style="display:none;">Reset</button>
 </div>
 
-<div id="scoreboard"><strong>Scoreboard</strong></div>
+<div id="scoreboard"><strong>Scores</strong></div>
 
 <div id="card-drawer">
     <div id="drawer-tab" onclick="toggleDrawer()">DECK</div>
-    <h3 style="margin:0 0 10px 0;">Your Hand</h3>
+    <h4 style="margin:0;">Your Hand (Tap to select)</h4>
     <div id="deck-container"></div>
     <div id="drawer-controls">
-        <button id="drawBtn">Draw Card</button>
-        <button id="discardBtn">Discard Selected</button>
+        <button id="drawBtn">Draw</button>
+        <button id="discardBtn">Discard</button>
     </div>
 </div>
 
-<button id="signOutBtn">Sign Out</button>
+<button id="signOutBtn" style="display:none;">Sign Out</button>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
@@ -271,6 +204,7 @@ const provider = new GoogleAuthProvider();
 
 const WHITELIST = ["blatherstv@gmail.com", "ethanby2000@gmail.com", "kishore0299@gmail.com"];
 
+// --- State ---
 let currentUser = null;
 let selectedColor = "red";
 let selected = {};
@@ -280,23 +214,31 @@ let challenges = [];
 let userHand = []; 
 let selectedSlotIndex = null;
 
-// --- AUTH ---
+// --- Auth & Sync ---
 onAuthStateChanged(auth, user => {
   if(user && WHITELIST.includes(user.email)){
     currentUser = user;
     setupDeckSync(user);
   } else {
     currentUser = null;
-    setupDeckSync(null);
+    userHand = [];
+    renderHand();
     if(user) auth.signOut();
   }
   updateUI();
 });
 
+function setupDeckSync(user) {
+    onSnapshot(doc(db, "userDecks", user.uid), docSnap => {
+        userHand = docSnap.exists() ? docSnap.data().hand : [];
+        renderHand();
+    });
+}
+
 document.getElementById("loginBtn").onclick = () => signInWithPopup(auth, provider);
 document.getElementById("signOutBtn").onclick = () => auth.signOut();
 
-// --- UI ---
+// --- UI Controls ---
 const colorButtons = document.querySelectorAll("#colorPicker button[data-color]");
 const activeColorCircle = document.getElementById("activeColor");
 
@@ -315,16 +257,14 @@ function updateUI() {
   document.getElementById("resetBtn").style.display = (currentUser?.email === "blatherstv@gmail.com") ? "block" : "none";
 }
 
-// --- MAP ---
-const map = L.map('map').setView([42.3601, -71.0589], 11);
+// --- Map Logic ---
+const map = L.map('map').setView([42.3601, -71.0589], 12);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 lockMarkers.addTo(map);
 
 const lockIcon = L.divIcon({
-  html: `<svg class="lock-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="black"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>`,
-  className: 'lock-icon-container',
-  iconSize: [18, 18],
-  iconAnchor: [9, 9]
+  html: `<svg class="lock-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="black"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>`,
+  className: '', iconSize: [16, 16], iconAnchor: [8, 8]
 });
 
 async function toggle(id) {
@@ -335,21 +275,11 @@ async function toggle(id) {
     else { alert("Claim it first!"); return; }
   } else {
     selected[id] = {
-      color: selectedColor,
-      userName: currentUser.displayName,
-      userId: currentUser.uid,
-      photoURL: currentUser.photoURL,
-      isLocked: false
+      color: selectedColor, userName: currentUser.displayName,
+      userId: currentUser.uid, photoURL: currentUser.photoURL, isLocked: false
     };
   }
   await setDoc(doc(db, "mapState", "boston"), selected);
-}
-
-async function removeColor(id) {
-  if (selected[id]?.userId === currentUser?.uid) {
-    delete selected[id];
-    await setDoc(doc(db, "mapState", "boston"), selected);
-  }
 }
 
 onSnapshot(doc(db, "mapState", "boston"), docSnap => {
@@ -368,13 +298,10 @@ function updateStyles() {
     const data = selected[id];
     layer.setStyle({
       fillColor: data ? data.color : "#3388ff",
-      fillOpacity: 0.33,
-      color: "#ffffff",
-      weight: 1
+      fillOpacity: 0.4, color: "#ffffff", weight: 1
     });
     if (data?.isLocked) {
-      const center = layer.getBounds().getCenter();
-      L.marker(center, { icon: lockIcon, interactive: false }).addTo(lockMarkers);
+      L.marker(layer.getBounds().getCenter(), { icon: lockIcon, interactive: false }).addTo(lockMarkers);
     }
   });
 }
@@ -382,32 +309,34 @@ function updateStyles() {
 function updateScoreboard() {
   const scores = {};
   Object.values(selected).forEach(item => { scores[item.userName] = (scores[item.userName] || 0) + 1; });
-  document.getElementById("scoreboard").innerHTML = "<strong>Scoreboard</strong><br><br>" +
+  document.getElementById("scoreboard").innerHTML = "<strong>Scores</strong><br>" +
     Object.entries(scores).sort((a,b)=>b[1]-a[1]).map(([n,p])=>`${n}: ${p}`).join("<br>");
 }
 
 function onEachFeature(feature, layer) {
-  const id = feature._id;
   layer.on({
     mouseover: () => {
       layer.setStyle({ color: "#00fffb", weight: 3 });
-      const data = selected[id];
-      let content = `<strong>${feature.properties.name || 'Subdivision'}</strong>`;
-      if (data) content += `<div class="tooltip-user"><img src="${data.photoURL}"/>${data.userName} ${data.isLocked ? '(LOCKED)' : ''}</div>`;
+      const data = selected[feature._id];
+      let content = `<strong>${feature.properties.name || 'Area'}</strong>`;
+      if (data) content += `<br>${data.userName}`;
       layer.bindTooltip(content).openTooltip();
     },
-    mouseout: () => { layer.closeTooltip(); updateStyles(); },
-    click: () => toggle(id),
-    dblclick: () => removeColor(id)
+    mouseout: () => { updateStyles(); layer.closeTooltip(); },
+    click: () => toggle(feature._id),
+    dblclick: async () => {
+        if (selected[feature._id]?.userId === currentUser?.uid) {
+            delete selected[feature._id];
+            await setDoc(doc(db, "mapState", "boston"), selected);
+        }
+    }
   });
 }
 
-// --- DECK LOGIC ---
+// --- DECK SYSTEM ---
 fetch('challenges.json').then(res => res.json()).then(data => challenges = data);
 
-window.toggleDrawer = () => {
-    document.getElementById('card-drawer').classList.toggle('open');
-};
+window.toggleDrawer = () => document.getElementById('card-drawer').classList.toggle('open');
 
 function renderHand() {
     const container = document.getElementById('deck-container');
@@ -424,9 +353,7 @@ function renderHand() {
             slot.title = `${card.description}\n\n${stars}`;
             if (selectedSlotIndex === i) slot.classList.add('selected');
             slot.onclick = () => { selectedSlotIndex = (selectedSlotIndex === i) ? null : i; renderHand(); };
-        } else {
-            slot.innerHTML = 'Empty';
-        }
+        } else { slot.innerHTML = 'Empty'; }
         container.appendChild(slot);
     }
 }
@@ -434,37 +361,26 @@ function renderHand() {
 document.getElementById('drawBtn').onclick = async () => {
     if (!currentUser || userHand.length >= 7) return;
     userHand.push(challenges[Math.floor(Math.random() * challenges.length)]);
-    await saveDeck();
+    await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand });
 };
 
 document.getElementById('discardBtn').onclick = async () => {
     if (selectedSlotIndex === null) return;
     userHand.splice(selectedSlotIndex, 1);
     selectedSlotIndex = null;
-    await saveDeck();
+    await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand });
 };
 
-async function saveDeck() {
-    if (currentUser) await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand });
-    renderHand();
-}
-
-function setupDeckSync(user) {
-    if (user) {
-        onSnapshot(doc(db, "userDecks", user.uid), docSnap => {
-            userHand = docSnap.exists() ? docSnap.data().hand : [];
-            renderHand();
-        });
-    } else { userHand = []; renderHand(); }
-}
-
+// --- Initial Load ---
 fetch('Boston Subdivisions.json').then(res => res.json()).then(data => {
     data.features.forEach((f, i) => f._id = i.toString());
     geojsonLayer = L.geoJSON(data, { onEachFeature }).addTo(map);
     updateStyles();
 });
 
-document.getElementById("resetBtn").onclick = async () => await setDoc(doc(db, "mapState", "boston"), {});
+document.getElementById("resetBtn").onclick = async () => {
+    if(confirm("Wipe map?")) await setDoc(doc(db, "mapState", "boston"), {});
+};
 </script>
 </body>
 </html>
