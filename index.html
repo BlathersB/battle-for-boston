@@ -20,7 +20,7 @@
 
     #controls {
       position: absolute; bottom: 20px; left: 10px;
-      display:flex; gap:12px; align-items:center; /* Centering the ring vertically */
+      display:flex; gap:12px; align-items:center;
       background: white; padding:12px; z-index:1000;
       border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     }
@@ -36,17 +36,18 @@
     button[data-color="yellow"] { background-color:yellow; color:#000; text-shadow:none; }
     button[data-color="black"] { background-color:#444; }
 
-    /* The Color Ring/Indicator */
+    /* Centered Color Ring */
     #activeColor { 
       width:22px; height:22px; border-radius:50%; 
       border:3px solid #333; background-color: red;
       box-sizing: border-box;
+      display: inline-block;
     }
 
     #scoreboard {
       position:absolute; top:10px; right:10px;
-      background: rgba(255,255,255,0.9); padding:15px;
-      font-size:15px; z-index:1000; border-radius: 8px;
+      background: rgba(255,255,255,0.9); padding:12px;
+      font-size:14px; z-index:1000; border-radius: 8px;
       min-width: 120px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
 
@@ -106,7 +107,7 @@
 
     .card-slot {
       min-width: 115px;
-      height: 155px;
+      height: 145px;
       border: 2px dashed #ccc;
       border-radius: 10px;
       background: #f9f9f9;
@@ -114,13 +115,14 @@
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 12px;
-      font-size: 12px;
+      padding: 10px;
+      font-size: 11px;
       cursor: pointer;
       transition: all 0.2s ease;
       flex-shrink: 0;
       box-sizing: border-box;
       color: #999;
+      overflow: hidden;
     }
 
     .card-slot.occupied {
@@ -145,8 +147,8 @@
     }
 
     #drawer-controls button {
-      flex: 1; padding: 12px; border: none; border-radius: 8px;
-      font-weight: bold; cursor: pointer; color: white; font-size: 14px;
+      flex: 1; padding: 10px; border: none; border-radius: 8px;
+      font-weight: bold; cursor: pointer; color: white; font-size: 13px;
     }
 
     #drawBtn { background: #27ae60; }
@@ -210,12 +212,13 @@ const provider = new GoogleAuthProvider();
 
 const WHITELIST = ["blatherstv@gmail.com", "ethanby2000@gmail.com", "kishore0299@gmail.com"];
 
+// --- State ---
 let currentUser = null;
 let selectedColor = "red";
 let selected = {};
 let geojsonLayer = null;
 let lockMarkers = L.layerGroup();
-let challenges = [];
+let challenges = []; // Wait for JSON fetch
 let userHand = []; 
 let selectedSlotIndex = null;
 
@@ -235,11 +238,7 @@ onAuthStateChanged(auth, user => {
 
 function setupDeckSync(user) {
     onSnapshot(doc(db, "userDecks", user.uid), docSnap => {
-        if (docSnap.exists()) {
-            userHand = docSnap.data().hand || [];
-        } else {
-            userHand = [];
-        }
+        userHand = docSnap.exists() ? docSnap.data().hand : [];
         renderHand();
     });
 }
@@ -319,8 +318,7 @@ function updateScoreboard() {
   const scores = {};
   Object.values(selected).forEach(item => { scores[item.userName] = (scores[item.userName] || 0) + 1; });
   
-  // Added extra line break and horizontal rule for spacing
-  document.getElementById("scoreboard").innerHTML = "<strong>Scoreboard</strong><br><hr style='border:0; border-top:1px solid #ccc; margin:5px 0;'><br>" +
+  document.getElementById("scoreboard").innerHTML = "<strong>Scoreboard</strong><hr style='border:0; border-top:1px solid #ccc; margin:5px 0;'>" +
     Object.entries(scores).sort((a,b)=>b[1]-a[1]).map(([n,p])=>`${n}: ${p}`).join("<br>");
 }
 
@@ -330,7 +328,7 @@ function onEachFeature(feature, layer) {
       layer.setStyle({ color: "#00fffb", weight: 4 });
       const data = selected[feature._id];
       let content = `<strong>${feature.properties.name || 'Area'}</strong>`;
-      if (data) content += `<br>Occupied by: ${data.userName}`;
+      if (data) content += `<br>${data.userName}`;
       layer.bindTooltip(content).openTooltip();
     },
     mouseout: () => { updateStyles(); layer.closeTooltip(); },
@@ -338,16 +336,17 @@ function onEachFeature(feature, layer) {
   });
 }
 
-// --- DECK SYSTEM ---
+// --- DECK SYSTEM & DATA FETCH ---
 
-// Load challenges immediately
+// Fetch Challenges from JSON file
 fetch('challenges.json')
     .then(res => res.json())
     .then(data => {
         challenges = data;
-        console.log("Challenges Loaded");
+        console.log("Challenges loaded successfully from JSON!");
     })
-    .catch(err => console.error("Error loading JSON:", err));
+    .catch(err => console.error("Error loading challenges.json:", err));
+
 
 window.toggleDrawer = () => document.getElementById('card-drawer').classList.toggle('open');
 
@@ -363,10 +362,9 @@ function renderHand() {
         
         if (card) {
             slot.classList.add('occupied');
-            const stars = card.stars === 1 ? '⭐' : card.stars === 2 ? '⭐⭐' : '';
             const dbl = card.twoTerritories ? '<br><strong>[2X]</strong>' : '';
             slot.innerHTML = `<div><strong>${card.title}</strong>${dbl}</div>`;
-            slot.title = `${card.description}\n\n${stars}`; // Tooltip
+            slot.title = `${card.description}`; // Tooltip
             
             if (selectedSlotIndex === i) slot.classList.add('selected');
             
@@ -376,7 +374,7 @@ function renderHand() {
                 renderHand();
             };
         } else {
-            slot.innerHTML = 'Empty Slot';
+            slot.innerHTML = 'Empty';
         }
         container.appendChild(slot);
     }
@@ -385,17 +383,16 @@ function renderHand() {
 document.getElementById('drawBtn').onclick = async () => {
     if (!currentUser) return alert("Sign in first!");
     if (userHand.length >= 7) return alert("Hand is full!");
-    if (challenges.length === 0) return alert("Loading challenges, try again in a second...");
+    if (challenges.length === 0) return alert("Still loading challenges, give it a second!");
 
     const randomCard = challenges[Math.floor(Math.random() * challenges.length)];
     userHand.push(randomCard);
     
-    // Save to Firebase (this triggers the onSnapshot and updates the UI)
     await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand });
 };
 
 document.getElementById('discardBtn').onclick = async () => {
-    if (selectedSlotIndex === null) return alert("Tap a card to select it first!");
+    if (selectedSlotIndex === null) return alert("Select a card first!");
     
     userHand.splice(selectedSlotIndex, 1);
     selectedSlotIndex = null;
@@ -403,16 +400,17 @@ document.getElementById('discardBtn').onclick = async () => {
 };
 
 // --- Map Data Load ---
-fetch('Boston Subdivisions.json').then(res => res.json()).then(data => {
-    data.features.forEach((f, i) => f._id = i.toString());
-    geojsonLayer = L.geoJSON(data, { onEachFeature }).addTo(map);
-    updateStyles();
-});
+fetch('Boston Subdivisions.json')
+    .then(res => res.json())
+    .then(data => {
+        data.features.forEach((f, i) => f._id = i.toString());
+        geojsonLayer = L.geoJSON(data, { onEachFeature }).addTo(map);
+        updateStyles();
+    })
+    .catch(err => console.error("Error loading Boston Subdivisions.json:", err));
 
 document.getElementById("resetBtn").onclick = async () => {
-    if(confirm("Are you sure you want to clear the entire map?")) {
-        await setDoc(doc(db, "mapState", "boston"), {});
-    }
+    if(confirm("Clear the entire map?")) await setDoc(doc(db, "mapState", "boston"), {});
 };
 </script>
 </body>
