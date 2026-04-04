@@ -190,8 +190,8 @@
 </div>
 
 <div id="rules-popup" class="popup-overlay">
-    <h3>Rules</h3>
-    <ul style="font-size: 14px">
+    <h3>Rules & Info</h3>
+    <ul style="font-size: 14px; text-align: left; padding-left: 20px;">
         <li><strong>Begin playing:</strong> Open the deck tab and draw 7 challenges</li>
         <!--<li><strong>Challenges:</strong> You must complete one of your 7 challenges. If you choose to discard a challenge for a new one, enter a 30 minute veto period.</li>-->
         <li><strong>Claiming:</strong> Tap a neighborhood with your color upon completing a challenge, tap again to remove claim if you made a mistake.</li>
@@ -320,18 +320,21 @@ document.getElementById('tt-completeBtn').onclick = () => {
 
 // Main Drawer Logic
 document.getElementById('drawBtn').onclick = () => {
+    if (!currentUser) return alert("You are not signed in");
     if (userHand.length >= 7) return alert("Hand full");
     userHand.push(challenges[Math.floor(Math.random() * challenges.length)]);
     saveDeck();
 };
 
 document.getElementById('battleBtn').onclick = () => {
+    if (!currentUser) return alert("You are not signed in");
     if (battleCard) return alert("Battle slot occupied");
     battleCard = battleChallenges[Math.floor(Math.random() * battleChallenges.length)];
     saveDeck(); showCardTooltip(battleCard);
 };
 
 document.getElementById('resetHandBtn').onclick = () => {
+    if (!currentUser) return alert("You are not signed in");
     if(confirm("Are you sure you want to reset? This will remove all cards in your hand and all completed challenges.")) {
         userHand = [];
         completedChallenges = [];
@@ -378,6 +381,7 @@ window.openViewAllPopup = () => {
 };
 
 document.getElementById('addChallengeBtn').onclick = () => {
+    if (!currentUser) return alert("You are not signed in");
     if(tempSelectedAllIndex === null) return;
     if(userHand.length >= 7) return alert("Hand full");
     userHand.push(challenges[tempSelectedAllIndex]);
@@ -440,6 +444,10 @@ function updateUI() {
     document.getElementById("loginBtn").style.display = isAuth ? "none" : "block";
     document.getElementById("signOutBtn").style.display = isAuth ? "block" : "none";
     document.getElementById("colorPicker").style.display = isAuth ? "flex" : "none";
+
+    /*document.getElementById("drawer-controls").style.opacity = isAuth ? "1" : "0.3";
+    document.getElementById("drawer-controls").style.pointerEvents = isAuth ? "auto" : "none";*/
+
     document.getElementById("resetBtn").style.display = (currentUser?.email === "blatherstv@gmail.com") ? "block" : "none";
 }
 
