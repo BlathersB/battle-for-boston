@@ -139,7 +139,7 @@
 
     /* Rules Button Style */
     #rulesBtn {
-      position:absolute; top:10px; left:50%; transform:translateX(-50%);
+      position:absolute; top:10px; left:50%;
       z-index:1000; font-size:18px; font-weight:bold;
       background: rgba(255,255,255,0.9); padding: 8px 16px; border-radius: 20px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.2);
@@ -172,7 +172,7 @@
 
 <div id="map"></div>
 <!--<div id="title">Battle for Boston</div>-->
-<button id="rulesBtn" onclick="openRules()">BATTLE FOR BOSTON</button>
+<button id="rulesBtn" onclick="openRules()">Battle for Boston</button>
 
 <div id="controls">
   <button id="loginBtn">Sign in with Google</button>
@@ -211,7 +211,8 @@
     <h2>Rules Info</h2>
     <ul>
         <li><strong>Begin playing:</strong> Open the deck tab and draw 7 challenges</li>
-        <li><strong>Claiming:</strong> Tap a neighborhood with your color upon completing a challenge, tap again to remove claim if needed</li>
+        <!--<li><strong>Challenges:</strong> You must complete one of your 7 challenges. If you choose to discard a challenge for a new one, enter a 30 minute veto period.</li>-->
+        <li><strong>Claiming:</strong> Tap a neighborhood with your color upon completing a challenge, tap again to remove claim if you made a mistake.</li>
         <li><strong>Battle Challenge:</strong> Battle an opposing neighborhood if you own 1/3 of the surrounding neighborhoods, draw battle challenge card if you are initiating. Use the lock button to lock ownership for winner of challenge</li>
         <li><strong>Powerups:</strong> If you complete a challenge with a powerup, choose one of the following:
         <ul>
@@ -222,6 +223,7 @@
         </ul></li>
         <li><strong>Battles:</strong> Use the Battle Challenge slot for high-stakes neighborhood disputes</li>
         <li><strong>Full Rules:</strong> Consult rules document for the full detailed rules</li>
+        <li><strong>Note:</strong> You must be signed into an account with a whitelisted email in order to play</li>
     </ul>
     <button id="rules-close" onclick="closeRules()">Close</button>
 </div>
