@@ -272,6 +272,13 @@ window.openPopup = (id) => document.getElementById(id).style.display = 'block';
 window.closePopup = (id) => document.getElementById(id).style.display = 'none';
 window.toggleDrawer = () => document.getElementById('card-drawer').classList.toggle('open');
 
+// --- MISSING LOGIN LOGIC ADDED HERE ---
+document.getElementById('loginBtn').onclick = () => {
+    const provider = new GoogleAuthProvider();
+    signInWithPopup(auth, provider).catch(error => console.error(error));
+};
+// --------------------------------------
+
 function renderHand() {
     const container = document.getElementById('deck-container');
     container.innerHTML = '';
