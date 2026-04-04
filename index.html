@@ -139,10 +139,14 @@
 
     /* Rules Button Style */
     #rulesBtn {
-      position: absolute; top: 10px; left: 10px;
+      position:absolute; top:10px; left:50%; transform:translateX(-50%);
+      z-index:1000; font-size:18px; font-weight:bold;
+      background: rgba(255,255,255,0.9); padding: 8px 16px; border-radius: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      /*position: absolute; top: 10px; left: 10px;
       z-index: 1000; padding: 8px 16px; border: none;
-      background: #2c3e50; color: white; font-weight: bold;
-      border-radius: 20px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      background: #000; color: white; font-weight: bold;
+      border-radius: 20px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);*/
     }
     
     /* Rules Popup (Matches Card Tooltip) */
@@ -167,8 +171,8 @@
 <body>
 
 <div id="map"></div>
-<div id="title">Battle for Boston</div>
-<button id="rulesBtn" onclick="openRules()">Rules Info</button>
+<!--<div id="title">Battle for Boston</div>-->
+<button id="rulesBtn" onclick="openRules()">BATTLE FOR BOSTON</button>
 
 <div id="controls">
   <button id="loginBtn">Sign in with Google</button>
@@ -204,15 +208,22 @@
 </div>
 
 <div id="rules-popup">
-    <h2>Game Rules</h2>
+    <h2>Rules Info</h2>
     <ul>
         <li><strong>Begin playing:</strong> Open the deck tab and draw 7 challenges</li>
-        <li><strong>Claiming:</strong> Tap a neighborhood with your color upon completing a challenge, tap again to remove claim if needed.</li>
-        <li><strong>Battle Challenge:</strong> Battle an opposing neighborhood if you own 1/3 of the surrounding neighborhoods, draw battle challenge card if you are initiating. Use the lock button to lock ownership for winner of challenge.</li>
-        <li><strong>Powerups:</strong> If you complete a challenge with a powerup, choose one: -Discard your entire hard, draw new cards -Swap one challenge with an opponent -Start a battle without controlling 1/3 of adjacent neighborhoods -Freeze opposing teams for 5 minutes outside of battle [ONLY ONE USE PER TEAM PER GAME]</li>
-        <li><strong>Battles:</strong> Use the Battle Challenge slot for high-stakes neighborhood disputes.</li>
+        <li><strong>Claiming:</strong> Tap a neighborhood with your color upon completing a challenge, tap again to remove claim if needed</li>
+        <li><strong>Battle Challenge:</strong> Battle an opposing neighborhood if you own 1/3 of the surrounding neighborhoods, draw battle challenge card if you are initiating. Use the lock button to lock ownership for winner of challenge</li>
+        <li><strong>Powerups:</strong> If you complete a challenge with a powerup, choose one of the following:
+        <ul>
+          <li>Discard your entire hard, draw new cards</li>
+          <li>Swap one challenge with an opponent (their deck will be revealed, you choose the card)</li>
+          <li>Start a battle without controlling 1/3 of adjacent neighborhoods</li>
+          <li>Freeze opposing teams for 5 minutes outside of battle [ONLY ONE USE PER TEAM PER GAME]</li>
+        </ul></li>
+        <li><strong>Battles:</strong> Use the Battle Challenge slot for high-stakes neighborhood disputes</li>
+        <li><strong>Full Rules:</strong> Consult rules document for the full detailed rules</li>
     </ul>
-    <button id="rules-close" onclick="closeRules()">Got it!</button>
+    <button id="rules-close" onclick="closeRules()">Close</button>
 </div>
 
 <button id="signOutBtn" style="display:none;">Sign Out</button>
