@@ -11,9 +11,9 @@
     #map { height:100vh; width:100vw; z-index: 1; }
 
     /* --- GLOBAL BOUNCE EFFECT --- */
-    button:active, .card-slot:active/*, #drawer-tab:active*/ {
+    button:active, .card-slot:active {
       transform: translateY(-4px) scale(1.03) !important;
-      transition: transform 0.4s ease-out;
+      transition: transform 0.1s ease-out;
     }
 
     /* UI Elements */
@@ -64,73 +64,43 @@
 
     /* --- MOBILE DECK DRAWER --- */
     #card-drawer {
-      position: fixed;
-      left: -85vw; 
-      top: 15vh;
-      width: 85vw;
-      height: 40vh;
-      background: #fdfdfd;
-      box-shadow: 5px 0 15px rgba(0,0,0,0.3);
-      z-index: 2000;
-      transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      padding: 15px;
-      display: flex;
-      flex-direction: column;
-      border-radius: 0 20px 20px 0;
-      box-sizing: border-box;
+      position: fixed; left: -85vw; top: 15vh; width: 85vw; height: 40vh;
+      background: #fdfdfd; box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+      z-index: 2000; transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      padding: 15px; display: flex; flex-direction: column;
+      border-radius: 0 20px 20px 0; box-sizing: border-box;
     }
     #card-drawer.open { left: 0; }
 
     #drawer-tab {
-      position: absolute;
-      right: -38px;
-      top: 20px;
-      width: 38px;
-      height: 110px;
-      background: #34495e;
-      color: white;
-      writing-mode: vertical-rl;
-      text-align: center;
-      line-height: 38px;
-      cursor: pointer;
-      border-radius: 0 12px 12px 0;
-      font-weight: bold;
-      letter-spacing: 1px;
+      position: absolute; right: -38px; top: 20px; width: 38px; height: 110px;
+      background: #34495e; color: white; writing-mode: vertical-rl;
+      text-align: center; line-height: 38px; cursor: pointer;
+      border-radius: 0 12px 12px 0; font-weight: bold; letter-spacing: 1px;
     }
 
     #deck-container {
-      display: flex;
-      flex-direction: row;
-      gap: 12px;
-      overflow-x: auto;
-      padding: 15px 5px;
-      flex: 1;
-      align-items: center;
+      display: flex; flex-direction: row; gap: 12px; overflow-x: auto;
+      padding: 15px 5px; flex: 1; align-items: center;
     }
 
     /* --- CARD STYLING --- */
     .card-slot {
-      min-width: 130px;
-      max-width: 130px;
-      height: 160px;
-      background: #ffffff;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 12px;
-      cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      flex-shrink: 0;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-      box-sizing: border-box;
-      overflow: hidden;
+      min-width: 130px; max-width: 130px; height: 160px;
+      background: #ffffff; border: 1px solid #ddd; border-radius: 12px;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; text-align: center; padding: 12px;
+      cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;
+      flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      box-sizing: border-box; overflow: hidden;
     }
     .card-slot.occupied { border: 2px solid #2c3e50; color: #2c3e50; }
     .card-slot.selected { border-color: #3498db; background: #f0f7ff; box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3); }
+
+    /* BATTLE SLOT SPECIFIC */
+    .battle-slot { border: 2px dashed #e74c3c; background: #fffcfc; }
+    .battle-slot.occupied { border: 3px solid #e74c3c !important; }
+    .battle-text { color: #e74c3c; font-size: 10px; font-weight: bold; }
 
     .card-title {
       font-weight: 800; font-size: 12px; text-transform: uppercase;
@@ -154,14 +124,15 @@
     }
 
     .special-tag {
-      background: #6c0de0; color: white; font-size: 10px;
+      background: #dea60b; color: white; font-size: 10px;
       padding: 4px 10px; border-radius: 12px; margin: 5px 2px;
       font-weight: bold; display: inline-block;
     }
 
-    #drawer-controls { display: flex; gap: 10px; margin-top: 10px; }
-    #drawer-controls button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; color: white; }
+    #drawer-controls { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    #drawer-controls button { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: bold; color: white; font-size: 11px; }
     #drawBtn { background: #247ad1; }
+    #battleBtn { background: #e74c3c; }
     #discardBtn { background: #34495e; }
 
     .lock-icon-svg { filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5)); pointer-events: none; }
@@ -192,6 +163,7 @@
     <div id="deck-container"></div>
     <div id="drawer-controls">
         <button id="drawBtn">Draw Card</button>
+        <button id="battleBtn">Battle Challenge</button>
         <button id="discardBtn">Discard Selected</button>
     </div>
 </div>
@@ -236,7 +208,9 @@ let selected = {};
 let geojsonLayer = null;
 let lockMarkers = L.layerGroup();
 let challenges = []; 
+let battleChallenges = [];
 let userHand = []; 
+let battleCard = null; // New state for 8th card
 let selectedSlotIndex = null;
 
 onAuthStateChanged(auth, user => {
@@ -246,6 +220,7 @@ onAuthStateChanged(auth, user => {
   } else {
     currentUser = null;
     userHand = [];
+    battleCard = null;
     renderHand();
     if(user) auth.signOut();
   }
@@ -254,7 +229,14 @@ onAuthStateChanged(auth, user => {
 
 function setupDeckSync(user) {
     onSnapshot(doc(db, "userDecks", user.uid), docSnap => {
-        userHand = docSnap.exists() ? docSnap.data().hand : [];
+        if(docSnap.exists()){
+            const data = docSnap.data();
+            userHand = data.hand || [];
+            battleCard = data.battleCard || null;
+        } else {
+            userHand = [];
+            battleCard = null;
+        }
         renderHand();
     });
 }
@@ -289,20 +271,16 @@ const lockIcon = L.divIcon({
   className: '', iconSize: [16, 16], iconAnchor: [8, 8]
 });
 
-// --- UPDATED TOGGLE LOGIC ---
 async function toggle(id) {
   if (!currentUser) return;
   const currentData = selected[id] || {};
-
   if (selectedColor === "black") {
     if (currentData.color) { currentData.isLocked = !currentData.isLocked; }
     else { alert("Claim it first!"); return; }
   } 
-  // TOGGLE OFF: If I own it and click with same color, delete it
   else if (currentData.userId === currentUser.uid && currentData.color === selectedColor) {
     delete selected[id];
   } 
-  // CLAIM: Normal claim logic
   else {
     if (currentData.isLocked && currentData.userId !== currentUser.uid) {
         alert("This territory is locked!");
@@ -362,10 +340,8 @@ function onEachFeature(feature, layer) {
 }
 
 // --- DECK SYSTEM ---
-fetch('challenges.json')
-    .then(res => res.json())
-    .then(data => { challenges = data; })
-    .catch(err => console.error("Error loading challenges.json", err));
+fetch('challenges.json').then(res => res.json()).then(data => { challenges = data; });
+fetch('battle-challenges.json').then(res => res.json()).then(data => { battleChallenges = data; });
 
 window.toggleDrawer = () => document.getElementById('card-drawer').classList.toggle('open');
 window.closeTooltip = () => { document.getElementById('card-tooltip').style.display = 'none'; renderHand(); };
@@ -374,10 +350,8 @@ function showCardTooltip(card) {
     const tt = document.getElementById('card-tooltip');
     document.getElementById('tt-title').innerText = card.title;
     document.getElementById('tt-desc').innerText = card.description || "No rules provided.";
-    
     document.getElementById('tt-stars').innerHTML = card.stars ? `<div class="special-tag">Powerup ${'★'.repeat(card.stars)}</div>` : '';
     document.getElementById('tt-tag').innerHTML = card.twoTerritories ? '<div class="special-tag">CLAIM TWO NEIGHBORHOODS</div>' : '';
-    
     tt.style.display = 'block';
 }
 
@@ -385,6 +359,8 @@ function renderHand() {
     const container = document.getElementById('deck-container');
     if (!container) return;
     container.innerHTML = '';
+
+    // Render 7 Standard Slots
     for (let i = 0; i < 7; i++) {
         const slot = document.createElement('div');
         slot.className = 'card-slot';
@@ -399,31 +375,57 @@ function renderHand() {
         }
         container.appendChild(slot);
     }
+
+    // Render 8th Battle Slot
+    const bSlot = document.createElement('div');
+    bSlot.className = 'card-slot battle-slot';
+    if (battleCard) {
+        bSlot.classList.add('occupied');
+        if (selectedSlotIndex === 7) bSlot.classList.add('selected');
+        bSlot.innerHTML = `<div class="card-title">${battleCard.title}</div>`;
+        bSlot.onclick = (e) => { e.stopPropagation(); selectedSlotIndex = 7; renderHand(); showCardTooltip(battleCard); };
+    } else {
+        bSlot.innerHTML = '<span class="battle-text">BATTLE CHALLENGE</span>';
+    }
+    container.appendChild(bSlot);
 }
 
 document.getElementById('drawBtn').onclick = async () => {
     if (!currentUser) return alert("Sign in first!");
-    if (userHand.length >= 7) return alert("Hand is full");
+    if (userHand.length >= 7) return alert("Standard hand is full!");
     const randomCard = challenges[Math.floor(Math.random() * challenges.length)];
     userHand.push(randomCard);
-    await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand });
+    await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand, battleCard: battleCard });
+};
+
+document.getElementById('battleBtn').onclick = async () => {
+    if (!currentUser) return alert("Sign in first!");
+    if (battleCard) return alert("Battle slot occupied!");
+    if (battleChallenges.length === 0) return alert("Loading battle challenges...");
+    
+    const randomBattle = battleChallenges[Math.floor(Math.random() * battleChallenges.length)];
+    battleCard = randomBattle;
+    await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand, battleCard: battleCard });
+    showCardTooltip(battleCard); // Immediately display
 };
 
 document.getElementById('discardBtn').onclick = async () => {
     if (selectedSlotIndex === null) return alert("Select a card first");
-    userHand.splice(selectedSlotIndex, 1);
+    if (selectedSlotIndex === 7) {
+        battleCard = null;
+    } else {
+        userHand.splice(selectedSlotIndex, 1);
+    }
     selectedSlotIndex = null;
     document.getElementById('card-tooltip').style.display = 'none';
-    await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand });
+    await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand, battleCard: battleCard });
 };
 
-fetch('Boston Subdivisions.json')
-    .then(res => res.json())
-    .then(data => {
-        data.features.forEach((f, i) => f._id = i.toString());
-        geojsonLayer = L.geoJSON(data, { onEachFeature }).addTo(map);
-        updateStyles();
-    });
+fetch('Boston Subdivisions.json').then(res => res.json()).then(data => {
+    data.features.forEach((f, i) => f._id = i.toString());
+    geojsonLayer = L.geoJSON(data, { onEachFeature }).addTo(map);
+    updateStyles();
+});
 
 document.getElementById("resetBtn").onclick = async () => {
     if(confirm("Clear map?")) await setDoc(doc(db, "mapState", "boston"), {});
