@@ -189,9 +189,9 @@
     <button class="action-btn close-btn" onclick="closePopup('view-all-popup')">Close</button>
 </div>
 
-<div id="rules-popup" class="popup-overlay" style="padding-top: 15px; padding-bottom: 15px;">
-    <h3 style="margin-top: 0; margin-bottom: 10px;">Rules & Info</h3>
-    <ul style="font-size: 14px; text-align: left; padding-left: 20px; margin-top: 0; margin-bottom: 15px;">
+<div id="rules-popup" class="popup-overlay">
+    <h3>Rules & Info</h3>
+    <ul style="font-size: 14px; text-align: left; padding-left: 20px;">
         <li><strong>Begin playing:</strong> Open the deck tab and draw 7 challenges</li>
         <li><strong>Claiming:</strong> Tap a neighborhood with your color upon completing a challenge, tap again to remove claim if you made a mistake.</li>
         <li><strong>Battle Challenge:</strong> Battle an opposing neighborhood if you own 1/3 of the surrounding neighborhoods, draw battle challenge card if you are initiating. Use the lock button to lock ownership for winner of challenge</li>
@@ -205,8 +205,9 @@
         <li><strong>Battles:</strong> Use the Battle Challenge slot for high-stakes neighborhood disputes</li>
         <li><strong>Full Rules:</strong> Consult rules document for the full detailed rules</li>
         <li><strong>Note:</strong> You must be signed into an account with a whitelisted email in order to play</li>
+
     </ul>
-    <button class="action-btn close-btn" style="margin-bottom: 0;" onclick="closePopup('rules-popup')">Close</button>
+    <button class="action-btn close-btn" onclick="closePopup('rules-popup')">Close</button>
 </div>
 
 <button id="signOutBtn" style="display:none;" onclick="logout()" title="Sign Out">
@@ -243,14 +244,21 @@ let currentUser = null, selectedColor = "red", selected = {}, geojsonLayer = nul
 let challenges = [], battleChallenges = [], userHand = [], completedChallenges = [], battleCard = null, selectedSlotIndex = null;
 let tempSelectedAllIndex = null;
 
-// Map state listener (Spectator Mode - Active for everyone)
-onSnapshot(doc(db, "mapState", "boston"), ds => { 
-    if(ds.exists()){ 
-        selected = ds.data(); 
-        updateStyles(); 
-        updateScoreboard(); 
-    } 
-});
+// GLOBAL MAP LISTENER
+function startMapListener() {
+    onSnapshot(doc(db, "mapState", "boston"), ds => { 
+        if(ds.exists()){ 
+            selected = ds.data(); 
+            if (geojsonLayer) {
+                updateStyles(); 
+                updateScoreboard(); 
+            }
+        } 
+    });
+}
+
+// Start listening immediately for Spectators
+startMapListener();
 
 onAuthStateChanged(auth, user => {
   if(user && WHITELIST.includes(user.email)){
@@ -284,7 +292,6 @@ window.closePopup = (id) => document.getElementById(id).style.display = 'none';
 window.toggleDrawer = () => document.getElementById('card-drawer').classList.toggle('open');
 window.logout = () => auth.signOut();
 
-// Handle Login Button Click
 document.getElementById('loginBtn').onclick = () => {
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider).catch(error => console.error(error));
@@ -410,6 +417,10 @@ fetch('Boston Subdivisions.json').then(res => res.json()).then(data => {
             l.on('mouseout', () => { updateStyles(); l.closeTooltip(); });
         }
     }).addTo(map);
+    
+    // REFRESH once map layer exists
+    updateStyles();
+    updateScoreboard();
 });
 
 async function toggle(id) {
