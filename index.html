@@ -10,29 +10,26 @@
     body { margin:0; overflow: hidden; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #eee; }
     #map { height:100vh; width:100vw; z-index: 1; }
 
-    /* --- GLOBAL BOUNCE EFFECT --- */
-    button:active, .card-slot:active {
-      transform: translateY(-4px) scale(1.03) !important;
-      transition: transform 0.1s ease-out;
-    }
+    button:active, .card-slot:active { transform: translateY(-4px) scale(1.03) !important; transition: transform 0.1s ease-out; }
 
+    /* Centered Header Button */
     #rulesBtn {
-      /*position: absolute; top: 10px; left: 10px;
-      z-index: 1000; padding: 8px 16px; border: none;
-      background: #2c3e50; color: white; font-weight: bold;
-      border-radius: 20px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);*/
-      position:absolute; top:10px; left:50%;
-      z-index:1000; font-size:18px; font-weight:bold;
-      background: rgba(255,255,255,0.9); padding: 8px 16px; /*border-radius: 20px*/;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
-
-    #title {
-      position:absolute; top:10px; left:50%; transform:translateX(-50%);
+      position:absolute; top:10px; left:0; right: 0; margin-left: auto; margin-right: auto; width: fit-content;
       z-index:1000; font-size:18px; font-weight:bold;
       background: rgba(255,255,255,0.9); padding: 8px 16px; border-radius: 20px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2); border: none; cursor: pointer;
     }
+
+    /* Activity Feed (Top Left) */
+    #activity-panel {
+      position: absolute; top: 10px; left: 10px; z-index: 1000;
+      background: rgba(255,255,255,0.9); padding: 10px; border-radius: 8px;
+      width: 220px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-size: 12px;
+    }
+    #activity-content { margin: 8px 0; display: block; }
+    .activity-entry { padding: 4px 0; border-bottom: 1px solid #eee; color: #444; }
+    #activity-panel.minimized #activity-content, #activity-panel.minimized #hide-activity { display: none; }
+    #hide-activity { width: 100%; border: none; background: #ddd; border-radius: 4px; padding: 4px; cursor: pointer; font-size: 10px; }
 
     #controls {
       position: absolute; bottom: 20px; left: 10px;
@@ -42,15 +39,11 @@
     }
 
     #colorPicker { display: flex; align-items: center; gap: 8px; }
-    #colorPicker button {
-      padding:10px 14px; border:none; font-weight:bold; cursor:pointer;
-      color:white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); border-radius: 6px;
-    }
+    #colorPicker button { padding:10px 14px; border:none; font-weight:bold; cursor:pointer; color:white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); border-radius: 6px; }
     button[data-color="red"] { background-color:red; }
     button[data-color="green"] { background-color:green; }
     button[data-color="orange"] { background-color:orange; color:#000; }
     button[data-color="black"] { background-color:#444; }
-
     #activeColor { width:22px; height:22px; border-radius:50%; border:3px solid #333; background-color: red; }
 
     #scoreboard {
@@ -60,9 +53,8 @@
       min-width: 120px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
 
-    /* --- MOBILE DECK DRAWER --- */
     #card-drawer {
-      position: fixed; left: -85vw; top: 15vh; width: 85vw; height: 50vh;
+      position: fixed; left: -85vw; top: 15vh; width: 85vw; height: auto; max-height: 50vh;
       background: #fdfdfd; box-shadow: 5px 0 15px rgba(0,0,0,0.3);
       z-index: 2000; transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       padding: 15px; display: flex; flex-direction: column;
@@ -76,36 +68,30 @@
       border-radius: 0 12px 12px 0; font-weight: bold;
     }
 
-    #deck-container { display: flex; flex-direction: row; gap: 12px; overflow-x: auto; padding: 15px 5px; flex-shrink: 0; align-items: center; }
+    #deck-container { display: flex; flex-direction: row; gap: 12px; overflow-x: auto; padding: 10px 5px; align-items: center; }
 
-    /* --- CARD STYLING --- */
     .card-slot {
       min-width: 130px; max-width: 130px; height: 160px;
       background: #ffffff; border: 1px solid #ddd; border-radius: 12px;
       display: flex; flex-direction: column; align-items: center;
       justify-content: center; text-align: center; padding: 12px;
-      cursor: pointer; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-      box-sizing: border-box; overflow: hidden;
+      cursor: pointer; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); box-sizing: border-box;
     }
     .card-slot.occupied { border: 2px solid #2c3e50; }
-    .card-slot.selected { border-color: #3498db; background: #f0f7ff; box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3); }
+    .card-slot.selected { border-color: #3498db; background: #f0f7ff; }
     .battle-slot { border: 2px dashed #2c3e50; }
     .battle-slot.occupied { border: 3px solid #e74c3c !important; }
-
     .card-title { font-weight: 800; font-size: 11px; text-transform: uppercase; line-height: 1.2; }
 
-    /* --- BUTTON LAYOUT --- */
-    #drawer-controls { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+    #drawer-controls { display: flex; flex-direction: column; gap: 8px; margin-top: 5px; }
     .btn-row { display: flex; gap: 6px; }
-    #drawer-controls button { flex: 1; padding: 10px 5px; border: none; border-radius: 8px; font-weight: bold; color: white; font-size: 10px; cursor: pointer; }
+    #drawer-controls button { flex: 1; padding: 12px 5px; border: none; border-radius: 8px; font-weight: bold; color: white; font-size: 10px; cursor: pointer; }
     
     #drawBtn { background: #247ad1; }
-    #completeBtn { background: #27ae60; }
-    #discardBtn { background: #e74c3c; }
     #battleBtn { background: #34495e; }
+    #resetHandBtn { background: #7f8c8d; }
     #viewCompletedBtn, #viewAllBtn { background: #8e44ad; }
 
-    /* --- POPUPS --- */
     .popup-overlay {
       position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
       background: white; padding: 25px; border-radius: 20px;
@@ -113,30 +99,33 @@
       width: 85%; max-width: 400px; display: none; text-align: center;
       border: 3px solid #2c3e50; max-height: 80vh; overflow-y: auto;
     }
-    /* Specific override for the Card Detail Tooltip */
-    #card-tooltip {
-      /* Set this higher than 3000 so it sits on top of other popups */
-      z-index: 4000 !important; 
-    }
+    #card-tooltip { z-index: 4000 !important; }
     .scroll-list { display: flex; flex-direction: column; gap: 10px; margin: 15px 0; max-height: 40vh; overflow-y: auto; padding: 5px; }
     .list-item { padding: 10px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; }
-    .list-item:hover { background: #f9f9f9; }
-    .list-item.selected { border: 2px solid #3498db; background: #f0f7ff; }
-
+    
     .special-tagP { background: #dea60b; color: white; font-size: 10px; padding: 4px 10px; border-radius: 12px; margin: 5px 2px; font-weight: bold; display: inline-block; }
     .special-tag2 { background: #000; color: white; font-size: 10px; padding: 4px 10px; border-radius: 12px; margin: 5px 2px; font-weight: bold; display: inline-block; }
-    .close-btn { background: #2c3e50; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; }
-    #addChallengeBtn { background: #247ad1; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 5px; display:none; }
+    
+    .action-btn { width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; color: white; border: none; cursor: pointer; margin-top: 8px; }
+    #tt-complete { background: #27ae60; }
+    #tt-discard { background: #e74c3c; }
+    #tt-close { background: #2c3e50; }
 
-    #rules-popup ul { text-align: left; font-size: 13px; }
-    #signOutBtn { position:absolute; bottom:20px; right:10px; padding:8px 12px; background:white; z-index:1000; border-radius: 4px; border:none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); font-weight: bold;}
+    #addChallengeBtn { background: #247ad1; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 5px; display:none; }
+    #signOutBtn { position:absolute; bottom:20px; right:10px; padding:8px 12px; background:white; z-index:1000; border-radius: 4px; border:none; font-weight: bold;}
   </style>
 </head>
 <body>
 
 <div id="map"></div>
+
+<div id="activity-panel">
+  <strong onclick="toggleActivity()" style="cursor:pointer;">Activity Feed</strong>
+  <div id="activity-content"></div>
+  <button id="hide-activity" onclick="toggleActivity()">Hide</button>
+</div>
+
 <button id="rulesBtn" onclick="openPopup('rules-popup')">Battle for Boston</button>
-<!--<div id="title">Battle for Boston</div>-->
 
 <div id="controls">
   <button id="loginBtn">Sign in with Google</button>
@@ -144,21 +133,20 @@
     <button data-color="red">Red</button><button data-color="green">Green</button><button data-color="orange">Orange</button><button data-color="black">Lock</button>
     <div id="activeColor"></div>
   </div>
-  <button id="resetBtn" style="display:none;">Reset</button>
+  <button id="resetBtn" style="display:none;">Reset Map</button>
 </div>
 
 <div id="scoreboard"><strong>Scoreboard</strong></div>
 
 <div id="card-drawer">
     <div id="drawer-tab" onclick="toggleDrawer()">DECK</div>
-    <h4 style="margin:0 0 5px 0; color: #34495e; font-size: 14px;">Your Challenges</h4>
+    <h4 style="margin:0; color: #34495e; font-size: 14px;">Your Challenges</h4>
     <div id="deck-container"></div>
     <div id="drawer-controls">
         <div class="btn-row">
             <button id="drawBtn">Draw Challenge</button>
-            <button id="discardBtn">Discard</button>
-            <button id="completeBtn">Complete</button>
             <button id="battleBtn">Battle Challenge</button>
+            <button id="resetHandBtn">Reset Hand</button>
         </div>
         <div class="btn-row">
             <button id="viewCompletedBtn" onclick="openCompletedPopup()">Completed Challenges</button>
@@ -171,13 +159,16 @@
     <h3 id="tt-title"></h3>
     <p id="tt-desc"></p>
     <div id="tt-stars"></div><div id="tt-tag"></div>
-    <button class="close-btn" onclick="closePopup('card-tooltip')">Close</button>
+    <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+    <button id="tt-complete" class="action-btn">Complete Challenge</button>
+    <button id="tt-discard" class="action-btn">Discard Card</button>
+    <button id="tt-close" class="action-btn" onclick="closePopup('card-tooltip')">Close</button>
 </div>
 
 <div id="completed-popup" class="popup-overlay">
     <h3>Completed</h3>
     <div id="completed-list" class="scroll-list"></div>
-    <button class="close-btn" onclick="closePopup('completed-popup')">Close</button>
+    <button class="action-btn" style="background:#2c3e50" onclick="closePopup('completed-popup')">Close</button>
 </div>
 
 <div id="view-all-popup" class="popup-overlay">
@@ -185,39 +176,29 @@
     <div id="all-challenges-list" class="scroll-list"></div>
     <div id="all-challenge-detail" style="font-size: 13px; color: #666; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">Select challenge to view info</div>
     <button id="addChallengeBtn">Add Challenge to Deck</button>
-    <button class="close-btn" onclick="closePopup('view-all-popup')">Close</button>
+    <button class="action-btn" style="background:#2c3e50" onclick="closePopup('view-all-popup')">Close</button>
 </div>
 
 <div id="rules-popup" class="popup-overlay">
     <h3>Rules</h3>
-    <ul>
+    <ul style="text-align: left; font-size: 13px;">
         <li><strong>Begin playing:</strong> Open the deck tab and draw 7 challenges</li>
-        <!--<li><strong>Challenges:</strong> You must complete one of your 7 challenges. If you choose to discard a challenge for a new one, enter a 30 minute veto period.</li>-->
-        <li><strong>Claiming:</strong> Tap a neighborhood with your color upon completing a challenge, tap again to remove claim if you made a mistake.</li>
-        <li><strong>Battle Challenge:</strong> Battle an opposing neighborhood if you own 1/3 of the surrounding neighborhoods, draw battle challenge card if you are initiating. Use the lock button to lock ownership for winner of challenge</li>
-        <li><strong>Powerups:</strong> If you complete a challenge with a powerup, choose one of the following:
-        <ul>
-          <li>Discard your entire hard, draw new cards</li>
-          <li>Swap one challenge with an opponent (their deck will be revealed, you choose the card)</li>
-          <li>Start a battle without controlling 1/3 of adjacent neighborhoods</li>
-          <li>Freeze opposing teams for 5 minutes outside of battle [ONLY ONE USE PER TEAM PER GAME]</li>
-        </ul></li>
-        <li><strong>Battles:</strong> Use the Battle Challenge slot for high-stakes neighborhood disputes</li>
-        <li><strong>Full Rules:</strong> Consult rules document for the full detailed rules</li>
-        <li><strong>Note:</strong> You must be signed into an account with a whitelisted email in order to play</li>
+        <li><strong>Claiming:</strong> Tap a neighborhood with your color upon completing a challenge.</li>
+        <li><strong>Battle Challenge:</strong> Initiate if you own 1/3 of adjacent neighborhoods.</li>
+        <li><strong>Powerups:</strong> Complete cards with stars to unlock special abilities.</li>
     </ul>
-    <button class="close-btn" onclick="closePopup('rules-popup')">Close</button>
+    <button class="action-btn" style="background:#2c3e50" onclick="closePopup('rules-popup')">Close</button>
 </div>
 
 <button id="signOutBtn" style="display:none;" onclick="auth.signOut()">Sign Out</button>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyAv9PMEqDgXaqpuHzAgjJDPthwYFZaxaRg",
   authDomain: "battle-for-boston.firebaseapp.com",
@@ -230,13 +211,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth();
-const provider = new GoogleAuthProvider();
 
 const WHITELIST = ["blatherstv@gmail.com", "ethanby2000@gmail.com", "kishore0299@gmail.com"];
-
-let currentUser = null, selectedColor = "red", selected = {}, geojsonLayer = null, lockMarkers = L.layerGroup();
+let currentUser = null, selectedColor = "red", selected = {};
 let challenges = [], battleChallenges = [], userHand = [], completedChallenges = [], battleCard = null, selectedSlotIndex = null;
-let tempSelectedAllIndex = null;
 
 onAuthStateChanged(auth, user => {
   if(user && WHITELIST.includes(user.email)){
@@ -256,6 +234,22 @@ onAuthStateChanged(auth, user => {
   updateUI();
 });
 
+// Activity Feed Logic
+onSnapshot(doc(db, "gameData", "activity"), (ds) => {
+    if(ds.exists()) {
+        const logs = ds.data().logs || [];
+        const content = document.getElementById('activity-content');
+        content.innerHTML = logs.slice(-3).reverse().map(log => `<div class="activity-entry">${log}</div>`).join('');
+    }
+});
+
+async function addActivity(msg) {
+    const ref = doc(db, "gameData", "activity");
+    await setDoc(ref, { logs: arrayUnion(`${currentUser.displayName}: ${msg}`) }, { merge: true });
+}
+
+window.toggleActivity = () => document.getElementById('activity-panel').classList.toggle('minimized');
+
 async function saveDeck() {
     if(!currentUser) return;
     await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand, battleCard, completed: completedChallenges });
@@ -265,7 +259,6 @@ window.openPopup = (id) => document.getElementById(id).style.display = 'block';
 window.closePopup = (id) => document.getElementById(id).style.display = 'none';
 window.toggleDrawer = () => document.getElementById('card-drawer').classList.toggle('open');
 
-// --- RENDER ---
 function renderHand() {
     const container = document.getElementById('deck-container');
     container.innerHTML = '';
@@ -288,10 +281,30 @@ function showCardTooltip(card) {
     document.getElementById('tt-desc').innerText = card.description || "No rules provided.";
     document.getElementById('tt-stars').innerHTML = card.stars ? `<div class="special-tagP">Powerup ${'★'.repeat(card.stars)}</div>` : '';
     document.getElementById('tt-tag').innerHTML = card.twoTerritories ? '<div class="special-tag2">CLAIM TWO NEIGHBORHOODS</div>' : '';
+    
+    // Manage action buttons inside tooltip
+    const isCompletedView = document.getElementById('completed-popup').style.display === 'block';
+    document.getElementById('tt-complete').style.display = isCompletedView ? 'none' : 'block';
+    document.getElementById('tt-discard').style.display = isCompletedView ? 'none' : 'block';
+    
     openPopup('card-tooltip');
 }
 
-// --- BUTTON LOGIC ---
+// Internal Action Button Handlers
+document.getElementById('tt-complete').onclick = () => {
+    const card = (selectedSlotIndex === 7) ? battleCard : userHand[selectedSlotIndex];
+    if(!card) return;
+    completedChallenges.push(card);
+    if (selectedSlotIndex === 7) battleCard = null; else userHand.splice(selectedSlotIndex, 1);
+    addActivity("completed a challenge and is claiming a neighborhood!");
+    selectedSlotIndex = null; closePopup('card-tooltip'); saveDeck();
+};
+
+document.getElementById('tt-discard').onclick = () => {
+    if (selectedSlotIndex === 7) battleCard = null; else userHand.splice(selectedSlotIndex, 1);
+    selectedSlotIndex = null; closePopup('card-tooltip'); saveDeck();
+};
+
 document.getElementById('drawBtn').onclick = () => {
     if (userHand.length >= 7) return alert("Hand full");
     userHand.push(challenges[Math.floor(Math.random() * challenges.length)]);
@@ -301,29 +314,21 @@ document.getElementById('drawBtn').onclick = () => {
 document.getElementById('battleBtn').onclick = () => {
     if (battleCard) return alert("Battle slot occupied");
     battleCard = battleChallenges[Math.floor(Math.random() * battleChallenges.length)];
+    addActivity("has started a battle challenge!");
     saveDeck(); showCardTooltip(battleCard);
 };
 
-document.getElementById('discardBtn').onclick = () => {
-    if (selectedSlotIndex === null) return alert("Select a card");
-    if (selectedSlotIndex === 7) battleCard = null; else userHand.splice(selectedSlotIndex, 1);
-    selectedSlotIndex = null; closePopup('card-tooltip'); saveDeck();
+document.getElementById('resetHandBtn').onclick = () => {
+    if(confirm("Are you sure you want to reset? This will remove all cards in your hand and all completed challenges.")){
+        userHand = []; completedChallenges = []; battleCard = null;
+        saveDeck();
+    }
 };
 
-document.getElementById('completeBtn').onclick = () => {
-    if (selectedSlotIndex === null) return alert("Select a card");
-    const card = (selectedSlotIndex === 7) ? battleCard : userHand[selectedSlotIndex];
-    if(!card) return;
-    completedChallenges.push(card);
-    if (selectedSlotIndex === 7) battleCard = null; else userHand.splice(selectedSlotIndex, 1);
-    selectedSlotIndex = null; closePopup('card-tooltip'); saveDeck();
-    alert("Challenge Completed!");
-};
-
-// --- POPUP HANDLERS ---
+// ... Rest of Logic (Map Init, Popups, etc.) ...
 window.openCompletedPopup = () => {
     const list = document.getElementById('completed-list');
-    list.innerHTML = completedChallenges.length ? '' : 'No challenges completed yet.';
+    list.innerHTML = completedChallenges.length ? '' : 'No completions yet.';
     completedChallenges.forEach(c => {
         const item = document.createElement('div');
         item.className = 'list-item';
@@ -336,40 +341,25 @@ window.openCompletedPopup = () => {
 
 window.openViewAllPopup = () => {
     const list = document.getElementById('all-challenges-list');
-    const detail = document.getElementById('all-challenge-detail');
-    const addBtn = document.getElementById('addChallengeBtn');
     list.innerHTML = '';
-    tempSelectedAllIndex = null;
-    addBtn.style.display = 'none';
-
     challenges.forEach((c, idx) => {
         const item = document.createElement('div');
         item.className = 'list-item';
         item.innerText = c.title;
         item.onclick = () => {
-            tempSelectedAllIndex = idx;
-            document.querySelectorAll('#all-challenges-list .list-item').forEach(el => el.classList.remove('selected'));
-            item.classList.add('selected');
-            detail.innerHTML = `<strong>${c.title}</strong><br>${c.description || 'No rules.'}`;
-            addBtn.style.display = 'block';
+            document.getElementById('all-challenge-detail').innerHTML = `<strong>${c.title}</strong><br>${c.description}`;
+            document.getElementById('addChallengeBtn').style.display = 'block';
+            document.getElementById('addChallengeBtn').onclick = () => {
+                if(userHand.length < 7) { userHand.push(c); saveDeck(); closePopup('view-all-popup'); } else alert("Hand full");
+            };
         };
         list.appendChild(item);
     });
     openPopup('view-all-popup');
 };
 
-document.getElementById('addChallengeBtn').onclick = () => {
-    if(tempSelectedAllIndex === null) return;
-    if(userHand.length >= 7) return alert("Hand full");
-    userHand.push(challenges[tempSelectedAllIndex]);
-    saveDeck();
-    closePopup('view-all-popup');
-};
-
-// --- INITIALIZATION ---
 const map = L.map('map', { zoomControl: false }).setView([42.3601, -71.0589], 12);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-lockMarkers.addTo(map);
 
 fetch('challenges.json').then(res => res.json()).then(d => challenges = d);
 fetch('battle-challenges.json').then(res => res.json()).then(d => battleChallenges = d);
@@ -395,7 +385,7 @@ async function toggle(id) {
     } else if (cur.userId === currentUser.uid && cur.color === selectedColor) {
         delete selected[id];
     } else {
-        if (cur.isLocked && cur.userId !== currentUser.uid) return alert("This neighborhood is locked");
+        if (cur.isLocked && cur.userId !== currentUser.uid) return alert("Locked");
         selected[id] = { color: selectedColor, userName: currentUser.displayName, userId: currentUser.uid, isLocked: false };
     }
     await setDoc(doc(db, "mapState", "boston"), selected);
@@ -404,11 +394,10 @@ async function toggle(id) {
 onSnapshot(doc(db, "mapState", "boston"), ds => { if(ds.exists()){ selected = ds.data(); updateStyles(); updateScoreboard(); } });
 
 function updateStyles() {
-    if (!geojsonLayer) return; lockMarkers.clearLayers();
+    if (!geojsonLayer) return;
     geojsonLayer.eachLayer(l => {
         const d = selected[l.feature._id];
         l.setStyle({ fillColor: d ? d.color : "#3388ff", fillOpacity: 0.45, color: "#ffffff", weight: 1.5 });
-        if(d?.isLocked) L.marker(l.getBounds().getCenter(), { icon: L.divIcon({ html: '🔒', className: 'lock-icon' }), interactive: false }).addTo(lockMarkers);
     });
 }
 
@@ -428,7 +417,6 @@ function updateUI() {
 document.querySelectorAll("#colorPicker button[data-color]").forEach(btn => {
     btn.onclick = () => { selectedColor = btn.dataset.color; document.getElementById("activeColor").style.backgroundColor = selectedColor === "black" ? "#444" : selectedColor; };
 });
-
 document.getElementById("resetBtn").onclick = async () => { if(confirm("Reset map?")) await setDoc(doc(db, "mapState", "boston"), {}); };
 </script>
 </body>
