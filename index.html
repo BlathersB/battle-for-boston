@@ -11,9 +11,9 @@
     #map { height:100vh; width:100vw; z-index: 1; }
 
     /* --- GLOBAL BOUNCE EFFECT --- */
-    button:active, .card-slot:active, #drawer-tab:active {
-      transform: translateY(-4px) scale(1.02) !important;
-      transition: transform 0.1s ease-out;
+    button:active, .card-slot:active/*, #drawer-tab:active*/ {
+      transform: translateY(-4px) scale(1.03) !important;
+      transition: transform 0.4s ease-out;
     }
 
     /* UI Elements */
@@ -39,7 +39,7 @@
     }
     button[data-color="red"] { background-color:red; }
     button[data-color="green"] { background-color:green; }
-    button[data-color="yellow"] { background-color:yellow; color:#000; text-shadow:none; }
+    button[data-color="orange"] { background-color:orange; color:#000; text-shadow:none; }
     button[data-color="black"] { background-color:#444; }
 
     #activeColor { 
@@ -160,8 +160,8 @@
 
     #drawer-controls { display: flex; gap: 10px; margin-top: 10px; }
     #drawer-controls button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; color: white; }
-    #drawBtn { background: #27ae60; }
-    #discardBtn { background: #c0392b; }
+    #drawBtn { background: #247ad1; }
+    #discardBtn { background: #34495e; }
 
     .lock-icon-svg { filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5)); pointer-events: none; }
   </style>
@@ -176,7 +176,7 @@
   <div id="colorPicker" style="display:none;">
     <button data-color="red">Red</button>
     <button data-color="green">Green</button>
-    <button data-color="yellow">Yellow</button>
+    <button data-color="orange">Orange</button>
     <button data-color="black">Lock</button>
     <div id="activeColor"></div>
   </div>
@@ -197,8 +197,8 @@
 
 <div id="card-tooltip">
     <h3 id="tt-title"></h3>
-    <div id="tt-stars"></div>
     <p id="tt-desc"></p>
+    <div id="tt-stars"></div>
     <div id="tt-tag"></div>
     <button id="tooltip-close" onclick="closeTooltip()">Close</button>
 </div>
