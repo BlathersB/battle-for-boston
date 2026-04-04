@@ -17,10 +17,14 @@
     }
 
     #rulesBtn {
-      position: absolute; top: 10px; left: 10px;
+      /*position: absolute; top: 10px; left: 10px;
       z-index: 1000; padding: 8px 16px; border: none;
       background: #2c3e50; color: white; font-weight: bold;
-      border-radius: 20px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      border-radius: 20px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);*/
+      position:absolute; top:10px; /*left:50%;*/
+      z-index:1000; font-size:18px; font-weight:bold;
+      background: rgba(255,255,255,0.9); padding: 8px 16px; /*border-radius: 20px*/;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
 
     #title {
@@ -109,12 +113,18 @@
       width: 85%; max-width: 400px; display: none; text-align: center;
       border: 3px solid #2c3e50; max-height: 80vh; overflow-y: auto;
     }
+    /* Specific override for the Card Detail Tooltip */
+    #card-tooltip {
+      /* Set this higher than 3000 so it sits on top of other popups */
+      z-index: 4000 !important; 
+    }
     .scroll-list { display: flex; flex-direction: column; gap: 10px; margin: 15px 0; max-height: 40vh; overflow-y: auto; padding: 5px; }
     .list-item { padding: 10px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; }
     .list-item:hover { background: #f9f9f9; }
     .list-item.selected { border: 2px solid #3498db; background: #f0f7ff; }
 
-    .special-tag { background: #6c0de0; color: white; font-size: 10px; padding: 4px 10px; border-radius: 12px; margin: 5px 2px; font-weight: bold; display: inline-block; }
+    .special-tagP { background: #dea60b; color: white; font-size: 10px; padding: 4px 10px; border-radius: 12px; margin: 5px 2px; font-weight: bold; display: inline-block; }
+    .special-tag2 { background: #000; color: white; font-size: 10px; padding: 4px 10px; border-radius: 12px; margin: 5px 2px; font-weight: bold; display: inline-block; }
     .close-btn { background: #2c3e50; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; }
     #addChallengeBtn { background: #27ae60; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 5px; display:none; }
 
@@ -173,17 +183,28 @@
 <div id="view-all-popup" class="popup-overlay">
     <h3>All Challenges</h3>
     <div id="all-challenges-list" class="scroll-list"></div>
-    <div id="all-challenge-detail" style="font-size: 13px; color: #666; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">Select a card to view info</div>
-    <button id="addChallengeBtn">Add Challenge</button>
+    <div id="all-challenge-detail" style="font-size: 13px; color: #666; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">Select challenge to view info</div>
+    <button id="addChallengeBtn">Add Challenge to Deck</button>
     <button class="close-btn" onclick="closePopup('view-all-popup')">Close</button>
 </div>
 
 <div id="rules-popup" class="popup-overlay">
     <h3>Rules</h3>
     <ul>
-        <li><strong>Complete:</strong> Moves selected card to your trophy list.</li>
-        <li><strong>View All:</strong> Allows you to pick a specific card (if you have space).</li>
-        <li><strong>Lock:</strong> Black color prevents others from stealing.</li>
+        <li><strong>Begin playing:</strong> Open the deck tab and draw 7 challenges</li>
+        <!--<li><strong>Challenges:</strong> You must complete one of your 7 challenges. If you choose to discard a challenge for a new one, enter a 30 minute veto period.</li>-->
+        <li><strong>Claiming:</strong> Tap a neighborhood with your color upon completing a challenge, tap again to remove claim if you made a mistake.</li>
+        <li><strong>Battle Challenge:</strong> Battle an opposing neighborhood if you own 1/3 of the surrounding neighborhoods, draw battle challenge card if you are initiating. Use the lock button to lock ownership for winner of challenge</li>
+        <li><strong>Powerups:</strong> If you complete a challenge with a powerup, choose one of the following:
+        <ul>
+          <li>Discard your entire hard, draw new cards</li>
+          <li>Swap one challenge with an opponent (their deck will be revealed, you choose the card)</li>
+          <li>Start a battle without controlling 1/3 of adjacent neighborhoods</li>
+          <li>Freeze opposing teams for 5 minutes outside of battle [ONLY ONE USE PER TEAM PER GAME]</li>
+        </ul></li>
+        <li><strong>Battles:</strong> Use the Battle Challenge slot for high-stakes neighborhood disputes</li>
+        <li><strong>Full Rules:</strong> Consult rules document for the full detailed rules</li>
+        <li><strong>Note:</strong> You must be signed into an account with a whitelisted email in order to play</li>
     </ul>
     <button class="close-btn" onclick="closePopup('rules-popup')">Close</button>
 </div>
@@ -265,8 +286,8 @@ function renderHand() {
 function showCardTooltip(card) {
     document.getElementById('tt-title').innerText = card.title;
     document.getElementById('tt-desc').innerText = card.description || "No rules provided.";
-    document.getElementById('tt-stars').innerHTML = card.stars ? `<div class="special-tag">Powerup ${'★'.repeat(card.stars)}</div>` : '';
-    document.getElementById('tt-tag').innerHTML = card.twoTerritories ? '<div class="special-tag">CLAIM TWO NEIGHBORHOODS</div>' : '';
+    document.getElementById('tt-stars').innerHTML = card.stars ? `<div class="special-tagP">Powerup ${'★'.repeat(card.stars)}</div>` : '';
+    document.getElementById('tt-tag').innerHTML = card.twoTerritories ? '<div class="special-tag2">CLAIM TWO NEIGHBORHOODS</div>' : '';
     openPopup('card-tooltip');
 }
 
