@@ -358,259 +358,6 @@ window.openCompletedPopup = () => {
 window.openViewAllPopup = () => {
     const list = document.getElementById('all-challenges-list');
     const detail = document.getElementById('all-challenge-detail');
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAv9PMEqDgXaqpuHzAgjJDPthwYFZaxaRg",
-  authDomain: "battle-for-boston.firebaseapp.com",
-  projectId: "battle-for-boston",
-  storageBucket: "battle-for-boston.firebasestorage.app",
-  messagingSenderId: "77626799415",
-  appId: "1:77626799415:web:29e0824275af1ccca616b2"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth();
-
-const WHITELIST = ["blatherstv@gmail.com", "ethanby2000@gmail.com", "kishore0299@gmail.com"];
-
-let currentUser = null, selectedColor = "red", selected = {}, geojsonLayer = null, lockMarkers = L.layerGroup();
-let challenges = [], battleChallenges = [], userHand = [], completedChallenges = [], battleCard = null, selectedSlotIndex = null;
-let tempSelectedAllIndex = null;
-
-// --- 1. GLOBAL MAP LISTENER (Runs for everyone, always) ---
-// This ensures that even signed-out users see the current state of the game.
-onSnapshot(doc(db, "mapState", "boston"), ds => { 
-    if(ds.exists()){ 
-        selected = ds.data(); 
-        updateStyles(); 
-        updateScoreboard(); 
-    } 
-}, (error) => {
-    console.error("Firestore Error: Check Rules if map is blank.", error);
-});
-
-// --- 2. AUTH LISTENER (UI & User Decks Only) ---
-onAuthStateChanged(auth, user => {
-  if(user && WHITELIST.includes(user.email)){
-    currentUser = user;
-    // Listen to this specific user's hand/deck
-    onSnapshot(doc(db, "userDecks", user.uid), ds => {
-        if(ds.exists()){
-            const d = ds.data();
-            userHand = d.hand || [];
-            battleCard = d.battleCard || null;
-            completedChallenges = d.completed || [];
-        }
-        renderHand();
-    });
-  } else {
-    // Log out: Clear private hand, but LEAVE 'selected' map data alone
-    currentUser = null; 
-    userHand = []; 
-    battleCard = null; 
-    completedChallenges = []; 
-    renderHand();
-    if(user) auth.signOut(); // Force signout if not on whitelist
-  }
-  updateUI();
-});
-
-// --- 3. PERSISTENCE LOGIC ---
-async function saveDeck() {
-    if(!currentUser) return;
-    await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand, battleCard, completed: completedChallenges });
-}
-
-// --- 4. MAP INITIALIZATION ---
-const map = L.map('map', { zoomControl: false }).setView([42.3601, -71.0589], 12);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-lockMarkers.addTo(map);
-
-fetch('challenges.json').then(res => res.json()).then(d => challenges = d);
-fetch('battle-challenges.json').then(res => res.json()).then(d => battleChallenges = d);
-
-fetch('Boston Subdivisions.json').then(res => res.json()).then(data => {
-    data.features.forEach((f, i) => f._id = i.toString());
-    geojsonLayer = L.geoJSON(data, { 
-        onEachFeature: (f, l) => {
-            l.on('click', () => toggle(f._id));
-            l.on('mouseover', () => {
-                l.setStyle({ color: "#00fffb", weight: 4 });
-                const d = selected[f._id];
-                const img = d?.photo ? `<img src="${d.photo}" style="width:18px;height:18px;border-radius:50%;vertical-align:middle;margin-right:6px;">` : '';
-                l.bindTooltip(`<strong>${f.properties.name}</strong>${d ? '<br>' + img + d.userName : ''}`).openTooltip();
-            });
-            l.on('mouseout', () => { updateStyles(); l.closeTooltip(); });
-        }
-    }).addTo(map);
-    // Refresh styles once GeoJSON is loaded in case Firebase data arrived first
-    updateStyles(); 
-});
-
-// --- 5. GAME ACTIONS ---
-async function toggle(id) {
-    if (!currentUser) {
-        alert("Please sign in to claim territories.");
-        return;
-    }
-    const cur = selected[id] || {};
-    
-    if (selectedColor === "black") {
-        if (cur.color) cur.isLocked = !cur.isLocked;
-    } else if (cur.userId === currentUser.uid && cur.color === selectedColor) {
-        delete selected[id];
-    } else {
-        if (cur.isLocked && cur.userId !== currentUser.uid) return alert("This neighborhood is locked");
-        selected[id] = { color: selectedColor, userName: currentUser.displayName, userId: currentUser.uid, photo: currentUser.photoURL, isLocked: false };
-    }
-
-    updateStyles(); 
-    updateScoreboard();
-
-    try {
-        await setDoc(doc(db, "mapState", "boston"), selected);
-    } catch (e) {
-        console.error("Save Error:", e);
-    }
-}
-
-function updateStyles() {
-    if (!geojsonLayer) return; 
-    lockMarkers.clearLayers();
-    geojsonLayer.eachLayer(l => {
-        const d = selected[l.feature._id];
-        l.setStyle({ fillColor: d ? d.color : "#3388ff", fillOpacity: 0.45, color: "#ffffff", weight: 1.5 });
-        if(d?.isLocked) {
-            L.marker(l.getBounds().getCenter(), { 
-                icon: L.divIcon({ html: '🔒', className: 'lock-icon' }), 
-                interactive: false 
-            }).addTo(lockMarkers);
-        }
-    });
-}
-
-function updateScoreboard() {
-    const s = {}; 
-    Object.values(selected).forEach(i => {
-        if(i && i.userName) {
-            s[i.userName] = { points: (s[i.userName]?.points || 0) + 1, color: i.color };
-        }
-    });
-    
-    document.getElementById("scoreboard").innerHTML = "<strong>Scoreboard</strong><hr style='margin:5px 0'>" + 
-        Object.entries(s)
-        .sort((a,b) => b[1].points - a[1].points)
-        .map(([name, data]) => `<span style="color:${data.color === 'black' ? '#333' : data.color}; font-weight:bold;">${name}</span>: ${data.points}`)
-        .join("<br>");
-}
-
-// --- 6. UI & HAND MANAGEMENT ---
-window.openPopup = (id) => document.getElementById(id).style.display = 'block';
-window.closePopup = (id) => document.getElementById(id).style.display = 'none';
-window.toggleDrawer = () => document.getElementById('card-drawer').classList.toggle('open');
-
-document.getElementById('loginBtn').onclick = () => {
-    const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider).catch(error => console.error(error));
-};
-
-window.logout = () => auth.signOut();
-
-function updateUI() {
-    const isAuth = !!currentUser;
-    document.getElementById("loginBtn").style.display = isAuth ? "none" : "block";
-    document.getElementById("signOutBtn").style.display = isAuth ? "block" : "none";
-    document.getElementById("colorPicker").style.display = isAuth ? "flex" : "none";
-    document.getElementById("resetBtn").style.display = (currentUser?.email === "blatherstv@gmail.com") ? "block" : "none";
-}
-
-function renderHand() {
-    const container = document.getElementById('deck-container');
-    container.innerHTML = '';
-    for (let i = 0; i < 7; i++) {
-        const slot = document.createElement('div');
-        slot.className = 'card-slot' + (userHand[i] ? ' occupied' : '') + (selectedSlotIndex === i ? ' selected' : '');
-        slot.innerHTML = userHand[i] ? `<div class="card-title">${userHand[i].title}</div>` : '<span style="color:#ccc; font-size:9px;">EMPTY</span>';
-        slot.onclick = () => { selectedSlotIndex = i; renderHand(); if(userHand[i]) showCardTooltip(userHand[i]); };
-        container.appendChild(slot);
-    }
-    const bSlot = document.createElement('div');
-    bSlot.className = 'card-slot battle-slot' + (battleCard ? ' occupied' : '') + (selectedSlotIndex === 7 ? ' selected' : '');
-    bSlot.innerHTML = battleCard ? `<div class="card-title">${battleCard.title}</div>` : '<span style="color:#000; font-size:9px; font-weight:bold;">BATTLE CHALLENGE</span>';
-    bSlot.onclick = () => { selectedSlotIndex = 7; renderHand(); if(battleCard) showCardTooltip(battleCard); };
-    container.appendChild(bSlot);
-}
-
-function showCardTooltip(card) {
-    document.getElementById('tt-title').innerText = card.title;
-    document.getElementById('tt-desc').innerText = card.description || "No rules provided.";
-    document.getElementById('tt-stars').innerHTML = card.stars ? `<div class="special-tagP">Powerup ${'★'.repeat(card.stars)}</div>` : '';
-    document.getElementById('tt-tag').innerHTML = card.twoTerritories ? '<div class="special-tag2">CLAIM TWO NEIGHBORHOODS</div>' : '';
-    
-    // Logic to hide buttons if viewing from 'Completed' list
-    const isFromCompleted = !userHand.includes(card) && battleCard !== card;
-    document.getElementById('tt-action-row').style.display = isFromCompleted ? 'none' : 'flex';
-    
-    openPopup('card-tooltip');
-}
-
-document.getElementById('tt-discardBtn').onclick = () => {
-    if (selectedSlotIndex === null) return;
-    if (selectedSlotIndex === 7) battleCard = null; else userHand.splice(selectedSlotIndex, 1);
-    selectedSlotIndex = null; closePopup('card-tooltip'); saveDeck();
-};
-
-document.getElementById('tt-completeBtn').onclick = () => {
-    if (selectedSlotIndex === null) return;
-    const card = (selectedSlotIndex === 7) ? battleCard : userHand[selectedSlotIndex];
-    if(!card) return;
-    completedChallenges.push(card);
-    if (selectedSlotIndex === 7) battleCard = null; else userHand.splice(selectedSlotIndex, 1);
-    selectedSlotIndex = null; closePopup('card-tooltip'); saveDeck();
-};
-
-document.getElementById('drawBtn').onclick = () => {
-    if (userHand.length >= 7) return alert("Hand full");
-    userHand.push(challenges[Math.floor(Math.random() * challenges.length)]);
-    saveDeck();
-};
-
-document.getElementById('battleBtn').onclick = () => {
-    if (battleCard) return alert("Battle slot occupied");
-    battleCard = battleChallenges[Math.floor(Math.random() * battleChallenges.length)];
-    saveDeck(); showCardTooltip(battleCard);
-};
-
-document.getElementById('resetHandBtn').onclick = () => {
-    if(confirm("Are you sure you want to reset? This will remove all cards in your hand and all completed challenges.")) {
-        userHand = [];
-        completedChallenges = [];
-        battleCard = null;
-        saveDeck();
-    }
-};
-
-window.openCompletedPopup = () => {
-    const list = document.getElementById('completed-list');
-    list.innerHTML = completedChallenges.length ? '' : 'No challenges completed yet.';
-    completedChallenges.forEach(c => {
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        item.innerText = c.title;
-        item.onclick = () => { selectedSlotIndex = null; showCardTooltip(c); };
-        list.appendChild(item);
-    });
-    openPopup('completed-popup');
-};
-
-window.openViewAllPopup = () => {
-    const list = document.getElementById('all-challenges-list');
-    const detail = document.getElementById('all-challenge-detail');
     const addBtn = document.getElementById('addChallengeBtn');
     list.innerHTML = '';
     tempSelectedAllIndex = null;
@@ -640,10 +387,90 @@ document.getElementById('addChallengeBtn').onclick = () => {
     closePopup('view-all-popup');
 };
 
+const map = L.map('map', { zoomControl: false }).setView([42.3601, -71.0589], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+lockMarkers.addTo(map);
+
+fetch('challenges.json').then(res => res.json()).then(d => challenges = d);
+fetch('battle-challenges.json').then(res => res.json()).then(d => battleChallenges = d);
+
+// FIX 1: PROFILE PICTURES IN TOOLTIPS
+fetch('Boston Subdivisions.json').then(res => res.json()).then(data => {
+    data.features.forEach((f, i) => f._id = i.toString());
+    geojsonLayer = L.geoJSON(data, { 
+        onEachFeature: (f, l) => {
+            l.on('click', () => toggle(f._id));
+            l.on('mouseover', () => {
+                l.setStyle({ color: "#00fffb", weight: 4 });
+                const d = selected[f._id];
+                const img = d?.photo ? `<img src="${d.photo}" style="width:18px;height:18px;border-radius:50%;vertical-align:middle;margin-right:6px;">` : '';
+                l.bindTooltip(`<strong>${f.properties.name}</strong>${d ? '<br>' + img + d.userName : ''}`).openTooltip();
+            });
+            l.on('mouseout', () => { updateStyles(); l.closeTooltip(); });
+        }
+    }).addTo(map);
+});
+
+// FIX 2: NO LAG (OPTIMISTIC UPDATES) + SAVE PHOTO
+async function toggle(id) {
+    if (!currentUser) return;
+    const cur = selected[id] || {};
+    
+    if (selectedColor === "black") {
+        if (cur.color) cur.isLocked = !cur.isLocked;
+    } else if (cur.userId === currentUser.uid && cur.color === selectedColor) {
+        delete selected[id];
+    } else {
+        if (cur.isLocked && cur.userId !== currentUser.uid) return alert("This neighborhood is locked");
+        selected[id] = { color: selectedColor, userName: currentUser.displayName, userId: currentUser.uid, photo: currentUser.photoURL, isLocked: false };
+    }
+
+    updateStyles(); 
+    updateScoreboard();
+
+    await setDoc(doc(db, "mapState", "boston"), selected);
+}
+
+onSnapshot(doc(db, "mapState", "boston"), ds => { if(ds.exists()){ selected = ds.data(); updateStyles(); updateScoreboard(); } });
+
+function updateStyles() {
+    if (!geojsonLayer) return; lockMarkers.clearLayers();
+    geojsonLayer.eachLayer(l => {
+        const d = selected[l.feature._id];
+        l.setStyle({ fillColor: d ? d.color : "#3388ff", fillOpacity: 0.45, color: "#ffffff", weight: 1.5 });
+        if(d?.isLocked) L.marker(l.getBounds().getCenter(), { icon: L.divIcon({ html: '🔒', className: 'lock-icon' }), interactive: false }).addTo(lockMarkers);
+    });
+}
+
+// FIX 3: UNBREAKABLE SCOREBOARD
+function updateScoreboard() {
+    const s = {}; 
+    Object.values(selected).forEach(i => {
+        if(i && i.userName) {
+            s[i.userName] = { points: (s[i.userName]?.points || 0) + 1, color: i.color };
+        }
+    });
+    
+    document.getElementById("scoreboard").innerHTML = "<strong>Scoreboard</strong><hr style='margin:5px 0'>" + 
+        Object.entries(s)
+        .sort((a,b) => b[1].points - a[1].points)
+        .map(([name, data]) => `<span style="color:${data.color === 'black' ? '#333' : data.color}; font-weight:bold;">${name}</span>: ${data.points}`)
+        .join("<br>");
+}
+
+function updateUI() {
+    const isAuth = !!currentUser;
+    document.getElementById("loginBtn").style.display = isAuth ? "none" : "block";
+    document.getElementById("signOutBtn").style.display = isAuth ? "block" : "none";
+    document.getElementById("colorPicker").style.display = isAuth ? "flex" : "none";
+    document.getElementById("resetBtn").style.display = (currentUser?.email === "blatherstv@gmail.com") ? "block" : "none";
+}
+
 document.querySelectorAll("#colorPicker button[data-color]").forEach(btn => {
     btn.onclick = () => { selectedColor = btn.dataset.color; document.getElementById("activeColor").style.backgroundColor = selectedColor === "black" ? "#444" : selectedColor; };
 });
 
+window.logout = () => auth.signOut();
 document.getElementById("resetBtn").onclick = async () => { if(confirm("Reset map?")) await setDoc(doc(db, "mapState", "boston"), {}); };
 </script>
 </body>
