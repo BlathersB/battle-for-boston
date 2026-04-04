@@ -1,0 +1,110 @@
+[
+  {
+    "title": "Shortest Street Name",
+    "description": "Found by number of letters on the sign (e.g., 'Park Street' = 10). No phones allowed to search. Tie goes to the first submission.",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Most Expensive Souvenir",
+    "description": "Highest dollar amount on a price tag. Must reference Boston, MA, or a directly associated entity (like a sports team).",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Most Distant License Plate",
+    "description": "Measured from the plate location to the nearest point in the territory. Tie goes to the first found.",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Photograph the Most Birds",
+    "description": "Each bird counts once. Photos can contain multiple birds. Most birds total wins.",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Find the Oldest Thing",
+    "description": "Age counts as the youngest possible within a verified range. Phones allowed for verification only, not locating.",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Find the Longest Book",
+    "description": "Verified by page count. Books found outside bookstores or libraries count double!",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Find the Smallest Park",
+    "description": "Must be public and labeled 'park' or 'garden' on Google Maps. Area includes the whole plot.",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Find the Shortest Street",
+    "description": "Determined by physical distance. No phones allowed. Must be a road, not a driveway or alley.",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Photograph Most Cyclists",
+    "description": "Each cyclist counts once. Photos can contain multiple cyclists. Most total wins.",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Most Unique Flags",
+    "description": "Find and photograph the highest number of unique flags representing anything.",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Find the Highest Number",
+    "description": "Must be a single number (license plate digits allowed). Cannot use items you brought with you.",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Exit Civilization",
+    "description": "First pair to verifiably get 500 meters away from a bus stop wins the battle immediately.",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Lock a Door",
+    "description": "First player to lock a door (in the vicinity of teammates) wins the battle immediately.",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Photograph a Dog",
+    "description": "First player to photograph a dog (in the presence of their pair) wins the battle immediately.",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Stack 7 Rocks",
+    "description": "First team to stack 7 rocks that stand for at least 10 seconds wins the battle immediately.",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Neighborhood Tripoint",
+    "description": "First pair to reach a point where three neighborhoods meet wins. Roll new battle if no tripoint exists here.",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Go to a Church",
+    "description": "First pair to touch a church wins the battle immediately.",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Ascend 50 Stairs",
+    "description": "First pair to each ascend 50 stairs wins. Each stair only counts once per teammate.",
+    "stars": 0,
+    "twoTerritories": false
+  }
+]
