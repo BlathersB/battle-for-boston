@@ -49,7 +49,7 @@
     }
 
     #scoreboard {
-      position:absolute; top:10px; right:10px;
+      position:absolute; top:15vh; right:10px;
       background: rgba(255,255,255,0.9); padding:12px;
       font-size:14px; z-index:1000; border-radius: 8px;
       min-width: 120px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
@@ -136,12 +136,39 @@
     #discardBtn { background: #34495e; }
 
     .lock-icon-svg { filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5)); pointer-events: none; }
+
+    /* Rules Button Style */
+    #rulesBtn {
+      position: absolute; top: 10px; left: 10px;
+      z-index: 1000; padding: 8px 16px; border: none;
+      background: #2c3e50; color: white; font-weight: bold;
+      border-radius: 20px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    /* Rules Popup (Matches Card Tooltip) */
+    #rules-popup {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: white; padding: 25px; border-radius: 20px;
+      box-shadow: 0 15px 50px rgba(0,0,0,0.4); z-index: 4000; /* Higher than drawer */
+      width: 85%; max-width: 400px; display: none; text-align: left;
+      border: 3px solid #2c3e50; max-height: 80vh; overflow-y: auto;
+    }
+    
+    #rules-popup h2 { margin-top: 0; color: #2c3e50; text-align: center; text-transform: uppercase; font-size: 20px; }
+    #rules-popup ul { padding-left: 20px; color: #444; font-size: 14px; line-height: 1.6; }
+    #rules-popup li { margin-bottom: 8px; }
+    
+    #rules-close { 
+      background: #2c3e50; color: white; border: none; padding: 12px; 
+      border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 15px;
+    }
   </style>
 </head>
 <body>
 
 <div id="map"></div>
 <div id="title">Battle for Boston</div>
+<button id="rulesBtn" onclick="openRules()">Rules</button>
 
 <div id="controls">
   <button id="loginBtn">Sign in with Google</button>
@@ -174,6 +201,18 @@
     <div id="tt-stars"></div>
     <div id="tt-tag"></div>
     <button id="tooltip-close" onclick="closeTooltip()">Close</button>
+</div>
+
+<div id="rules-popup">
+    <h2>Game Rules</h2>
+    <ul>
+        <li><strong>Claiming:</strong> Tap a neighborhood to claim it with your color.</li>
+        <li><strong>Deselecting:</strong> Tap your own territory while your color is active to clear it.</li>
+        <li><strong>Locking:</strong> Use the "Lock" (Black) color to prevent others from stealing your territory.</li>
+        <li><strong>Challenges:</strong> Draw cards to gain "Powerups." Use them to claim extra territories.</li>
+        <li><strong>Battles:</strong> Use the Battle Challenge slot for high-stakes neighborhood disputes.</li>
+    </ul>
+    <button id="rules-close" onclick="closeRules()">Got it!</button>
 </div>
 
 <button id="signOutBtn" style="display:none;">Sign Out</button>
@@ -390,6 +429,14 @@ function renderHand() {
     container.appendChild(bSlot);
 }
 
+window.openRules = () => {
+    document.getElementById('rules-popup').style.display = 'block';
+};
+
+window.closeRules = () => {
+    document.getElementById('rules-popup').style.display = 'none';
+};
+
 document.getElementById('drawBtn').onclick = async () => {
     if (!currentUser) return alert("Sign in first!");
     if (userHand.length >= 7) return alert("Standard hand is full!");
@@ -400,11 +447,12 @@ document.getElementById('drawBtn').onclick = async () => {
 
 document.getElementById('battleBtn').onclick = async () => {
     if (!currentUser) return alert("Sign in first!");
-    if (battleCard) return alert("Battle slot occupied!");
+    if (battleCard) return alert("You already have a battle challenge");
     if (battleChallenges.length === 0) return alert("Loading battle challenges...");
     
     const randomBattle = battleChallenges[Math.floor(Math.random() * battleChallenges.length)];
     battleCard = randomBattle;
+    selectedSlotIndex = 7
     await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand, battleCard: battleCard });
     showCardTooltip(battleCard); // Immediately display
 };
