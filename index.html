@@ -162,9 +162,9 @@
     <h4 style="margin:0 0 5px 0; color: #34495e; font-size: 14px;">Your Challenges</h4>
     <div id="deck-container"></div>
     <div id="drawer-controls">
-        <button id="drawBtn">Draw Card</button>
+        <button id="drawBtn">Draw Challenge</button>
+        <button id="discardBtn">Discard</button>
         <button id="battleBtn">Battle Challenge</button>
-        <button id="discardBtn">Discard Selected</button>
     </div>
 </div>
 
@@ -410,7 +410,7 @@ document.getElementById('battleBtn').onclick = async () => {
 };
 
 document.getElementById('discardBtn').onclick = async () => {
-    if (selectedSlotIndex === null) return alert("Select a card first");
+    if (selectedSlotIndex === null) return alert("Select a card to discard");
     if (selectedSlotIndex === 7) {
         battleCard = null;
     } else {
