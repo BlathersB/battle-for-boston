@@ -51,7 +51,7 @@
 
     /* --- MOBILE DECK DRAWER --- */
     #card-drawer {
-      position: fixed; left: -85vw; top: 15vh; width: 85vw; height: auto; /* Changed from 50vh to auto to remove blank space */
+      position: fixed; left: -85vw; top: 15vh; width: 85vw; height: auto;
       background: #fdfdfd; box-shadow: 5px 0 15px rgba(0,0,0,0.3);
       z-index: 2000; transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       padding: 15px; display: flex; flex-direction: column;
@@ -89,7 +89,7 @@
     
     #drawBtn { background: #247ad1; }
     #battleBtn { background: #34495e; }
-    #resetHandBtn { background: #7f8c8d; } /* New Reset Hand button color */
+    #resetHandBtn { background: #7f8c8d; }
     #viewCompletedBtn, #viewAllBtn { background: #8e44ad; }
 
     /* --- POPUPS --- */
@@ -125,7 +125,7 @@
       pointer-events: none;
       width: 24px;
       height: 24px;
-      color: #c0392b; /* A subtle red to indicate "Exit" */
+      color: #c0392b;
     }
   </style>
 </head>
@@ -189,11 +189,10 @@
     <button class="action-btn close-btn" onclick="closePopup('view-all-popup')">Close</button>
 </div>
 
-<div id="rules-popup" class="popup-overlay">
-    <h3>Rules & Info</h3>
-    <ul style="font-size: 14px; text-align: left; padding-left: 20px;">
+<div id="rules-popup" class="popup-overlay" style="padding-top: 15px; padding-bottom: 15px;">
+    <h3 style="margin-top: 0; margin-bottom: 10px;">Rules & Info</h3>
+    <ul style="font-size: 14px; text-align: left; padding-left: 20px; margin-top: 0; margin-bottom: 15px;">
         <li><strong>Begin playing:</strong> Open the deck tab and draw 7 challenges</li>
-        <!--<li><strong>Challenges:</strong> You must complete one of your 7 challenges. If you choose to discard a challenge for a new one, enter a 30 minute veto period.</li>-->
         <li><strong>Claiming:</strong> Tap a neighborhood with your color upon completing a challenge, tap again to remove claim if you made a mistake.</li>
         <li><strong>Battle Challenge:</strong> Battle an opposing neighborhood if you own 1/3 of the surrounding neighborhoods, draw battle challenge card if you are initiating. Use the lock button to lock ownership for winner of challenge</li>
         <li><strong>Powerups:</strong> If you complete a challenge with a powerup, choose one of the following:
@@ -206,9 +205,8 @@
         <li><strong>Battles:</strong> Use the Battle Challenge slot for high-stakes neighborhood disputes</li>
         <li><strong>Full Rules:</strong> Consult rules document for the full detailed rules</li>
         <li><strong>Note:</strong> You must be signed into an account with a whitelisted email in order to play</li>
-
     </ul>
-    <button class="action-btn close-btn" onclick="closePopup('rules-popup')">Close</button>
+    <button class="action-btn close-btn" style="margin-bottom: 0;" onclick="closePopup('rules-popup')">Close</button>
 </div>
 
 <button id="signOutBtn" style="display:none;" onclick="logout()" title="Sign Out">
@@ -245,6 +243,15 @@ let currentUser = null, selectedColor = "red", selected = {}, geojsonLayer = nul
 let challenges = [], battleChallenges = [], userHand = [], completedChallenges = [], battleCard = null, selectedSlotIndex = null;
 let tempSelectedAllIndex = null;
 
+// Map state listener (Spectator Mode - Active for everyone)
+onSnapshot(doc(db, "mapState", "boston"), ds => { 
+    if(ds.exists()){ 
+        selected = ds.data(); 
+        updateStyles(); 
+        updateScoreboard(); 
+    } 
+});
+
 onAuthStateChanged(auth, user => {
   if(user && WHITELIST.includes(user.email)){
     currentUser = user;
@@ -258,7 +265,11 @@ onAuthStateChanged(auth, user => {
         renderHand();
     });
   } else {
-    currentUser = null; userHand = []; battleCard = null; completedChallenges = []; renderHand(); if(user) auth.signOut();
+    currentUser = null; userHand = []; battleCard = null; completedChallenges = []; renderHand();
+    if(user && !WHITELIST.includes(user.email)) {
+        alert("You are not on the whitelist.");
+        auth.signOut();
+    }
   }
   updateUI();
 });
@@ -271,6 +282,13 @@ async function saveDeck() {
 window.openPopup = (id) => document.getElementById(id).style.display = 'block';
 window.closePopup = (id) => document.getElementById(id).style.display = 'none';
 window.toggleDrawer = () => document.getElementById('card-drawer').classList.toggle('open');
+window.logout = () => auth.signOut();
+
+// Handle Login Button Click
+document.getElementById('loginBtn').onclick = () => {
+    const provider = new GoogleAuthProvider();
+    signInWithPopup(auth, provider).catch(error => console.error(error));
+};
 
 function renderHand() {
     const container = document.getElementById('deck-container');
@@ -294,15 +312,11 @@ function showCardTooltip(card) {
     document.getElementById('tt-desc').innerText = card.description || "No rules provided.";
     document.getElementById('tt-stars').innerHTML = card.stars ? `<div class="special-tagP">Powerup ${'★'.repeat(card.stars)}</div>` : '';
     document.getElementById('tt-tag').innerHTML = card.twoTerritories ? '<div class="special-tag2">CLAIM TWO NEIGHBORHOODS</div>' : '';
-    
-    // Hide actions if viewing from Completed list
     const isCompleted = completedChallenges.includes(card) && selectedSlotIndex === null;
     document.getElementById('tt-action-row').style.display = isCompleted ? 'none' : 'flex';
-    
     openPopup('card-tooltip');
 }
 
-// Internal Action Button Logic
 document.getElementById('tt-discardBtn').onclick = () => {
     if (selectedSlotIndex === null) return;
     if (selectedSlotIndex === 7) battleCard = null; else userHand.splice(selectedSlotIndex, 1);
@@ -318,7 +332,6 @@ document.getElementById('tt-completeBtn').onclick = () => {
     selectedSlotIndex = null; closePopup('card-tooltip'); saveDeck();
 };
 
-// Main Drawer Logic
 document.getElementById('drawBtn').onclick = () => {
     if (!currentUser) return alert("You are not signed in");
     if (userHand.length >= 7) return alert("Hand full");
@@ -336,10 +349,7 @@ document.getElementById('battleBtn').onclick = () => {
 document.getElementById('resetHandBtn').onclick = () => {
     if (!currentUser) return alert("You are not signed in");
     if(confirm("Are you sure you want to reset? This will remove all cards in your hand and all completed challenges.")) {
-        userHand = [];
-        completedChallenges = [];
-        battleCard = null;
-        saveDeck();
+        userHand = []; completedChallenges = []; battleCard = null; saveDeck();
     }
 };
 
@@ -358,12 +368,8 @@ window.openCompletedPopup = () => {
 
 window.openViewAllPopup = () => {
     const list = document.getElementById('all-challenges-list');
-    const detail = document.getElementById('all-challenge-detail');
     const addBtn = document.getElementById('addChallengeBtn');
-    list.innerHTML = '';
-    tempSelectedAllIndex = null;
-    addBtn.style.display = 'none';
-
+    list.innerHTML = ''; tempSelectedAllIndex = null; addBtn.style.display = 'none';
     challenges.forEach((c, idx) => {
         const item = document.createElement('div');
         item.className = 'list-item';
@@ -372,7 +378,7 @@ window.openViewAllPopup = () => {
             tempSelectedAllIndex = idx;
             document.querySelectorAll('#all-challenges-list .list-item').forEach(el => el.classList.remove('selected'));
             item.classList.add('selected');
-            detail.innerHTML = `<strong>${c.title}</strong><br>${c.description || 'No rules.'}`;
+            document.getElementById('all-challenge-detail').innerHTML = `<strong>${c.title}</strong><br>${c.description || 'No rules.'}`;
             addBtn.style.display = 'block';
         };
         list.appendChild(item);
@@ -382,11 +388,8 @@ window.openViewAllPopup = () => {
 
 document.getElementById('addChallengeBtn').onclick = () => {
     if (!currentUser) return alert("You are not signed in");
-    if(tempSelectedAllIndex === null) return;
-    if(userHand.length >= 7) return alert("Hand full");
-    userHand.push(challenges[tempSelectedAllIndex]);
-    saveDeck();
-    closePopup('view-all-popup');
+    if(tempSelectedAllIndex === null || userHand.length >= 7) return;
+    userHand.push(challenges[tempSelectedAllIndex]); saveDeck(); closePopup('view-all-popup');
 };
 
 const map = L.map('map', { zoomControl: false }).setView([42.3601, -71.0589], 12);
@@ -423,8 +426,6 @@ async function toggle(id) {
     await setDoc(doc(db, "mapState", "boston"), selected);
 }
 
-onSnapshot(doc(db, "mapState", "boston"), ds => { if(ds.exists()){ selected = ds.data(); updateStyles(); updateScoreboard(); } });
-
 function updateStyles() {
     if (!geojsonLayer) return; lockMarkers.clearLayers();
     geojsonLayer.eachLayer(l => {
@@ -444,10 +445,6 @@ function updateUI() {
     document.getElementById("loginBtn").style.display = isAuth ? "none" : "block";
     document.getElementById("signOutBtn").style.display = isAuth ? "block" : "none";
     document.getElementById("colorPicker").style.display = isAuth ? "flex" : "none";
-
-    /*document.getElementById("drawer-controls").style.opacity = isAuth ? "1" : "0.3";
-    document.getElementById("drawer-controls").style.pointerEvents = isAuth ? "auto" : "none";*/
-
     document.getElementById("resetBtn").style.display = (currentUser?.email === "blatherstv@gmail.com") ? "block" : "none";
 }
 
@@ -455,7 +452,6 @@ document.querySelectorAll("#colorPicker button[data-color]").forEach(btn => {
     btn.onclick = () => { selectedColor = btn.dataset.color; document.getElementById("activeColor").style.backgroundColor = selectedColor === "black" ? "#444" : selectedColor; };
 });
 
-window.logout = () => auth.signOut();
 document.getElementById("resetBtn").onclick = async () => { if(confirm("Reset map?")) await setDoc(doc(db, "mapState", "boston"), {}); };
 </script>
 </body>
