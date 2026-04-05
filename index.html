@@ -204,7 +204,7 @@
         </ul></li>
         <li><strong>Remember:</strong> Draw 1 new challenge after each one you complete. You cannot discard challenges aside from earning a powerup or pulling a duplicate</li>
         <li><strong>Full Rules:</strong> Consult <a href="https://docs.google.com/document/d/12UeE2URIqaDAgssEYz7DkNpZFbi_vXyOhMMXMsztil4">rules document</a> for full detailed explanations</li>
-        <li><strong>Note:</strong> You must be signed into an account with a whitelisted email in order to play</li>
+        <li><strong>Note:</strong> You must be signed into a Google account in order to play and save your progress.</li>
 
     </ul>
     <button class="action-btn close-btn" onclick="closePopup('rules-popup')">Close</button>
@@ -238,14 +238,13 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth();
 
-const WHITELIST = ["blatherstv@gmail.com", "ethanby2000@gmail.com", "kishore0299@gmail.com"];
-
 let currentUser = null, selectedColor = "red", selected = {}, geojsonLayer = null, lockMarkers = L.layerGroup();
 let challenges = [], battleChallenges = [], userHand = [], completedChallenges = [], battleCard = null, selectedSlotIndex = null;
 let tempSelectedAllIndex = null;
 
 onAuthStateChanged(auth, user => {
-  if(user && WHITELIST.includes(user.email)){
+  if(user){
+    // Whitelist check removed: Any authenticated user can now play.
     currentUser = user;
     onSnapshot(doc(db, "userDecks", user.uid), ds => {
         if(ds.exists()){
@@ -257,7 +256,7 @@ onAuthStateChanged(auth, user => {
         renderHand();
     });
   } else {
-    currentUser = null; userHand = []; battleCard = null; completedChallenges = []; renderHand(); if(user) auth.signOut();
+    currentUser = null; userHand = []; battleCard = null; completedChallenges = []; renderHand();
   }
   updateUI();
 });
@@ -394,7 +393,6 @@ lockMarkers.addTo(map);
 fetch('challenges.json').then(res => res.json()).then(d => challenges = d);
 fetch('battle-challenges.json').then(res => res.json()).then(d => battleChallenges = d);
 
-// FIX 1: PROFILE PICTURES IN TOOLTIPS
 fetch('Boston Subdivisions.json').then(res => res.json()).then(data => {
     data.features.forEach((f, i) => f._id = i.toString());
     geojsonLayer = L.geoJSON(data, { 
@@ -411,7 +409,6 @@ fetch('Boston Subdivisions.json').then(res => res.json()).then(data => {
     }).addTo(map);
 });
 
-// FIX 2: NO LAG (OPTIMISTIC UPDATES) + SAVE PHOTO
 async function toggle(id) {
     if (!currentUser) return;
     const cur = selected[id] || {};
@@ -442,7 +439,6 @@ function updateStyles() {
     });
 }
 
-// FIX 3: UNBREAKABLE SCOREBOARD
 function updateScoreboard() {
     const s = {}; 
     Object.values(selected).forEach(i => {
