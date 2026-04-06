@@ -4,13 +4,11 @@
   <title>Jet Lag Battle for Boston</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
   <style>
     body { margin:0; overflow: hidden; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #eee; }
     #map { height:100vh; width:100vw; z-index: 1; }
 
-    /* --- GLOBAL BOUNCE EFFECT --- */
     button:active, .card-slot:active {
       transform: translateY(-4px) scale(1.03) !important;
       transition: transform 0.1s ease-out;
@@ -25,22 +23,44 @@
 
     #controls {
       position: absolute; bottom: 20px; left: 10px;
-      display:flex; gap:12px; align-items:center;
-      background: white; padding:12px; z-index:1000;
+      display:flex; gap:10px; align-items:center; flex-wrap: wrap;
+      background: white; padding:10px 12px; z-index:1000;
       border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      max-width: calc(100vw - 90px);
     }
 
-    #colorPicker { display: flex; align-items: center; gap: 8px; }
-    #colorPicker button {
-      padding:10px 14px; border:none; font-weight:bold; cursor:pointer;
-      color:white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); border-radius: 6px;
+    #teamColorBtn {
+      padding: 10px 18px; border: none; font-weight: bold; cursor: default;
+      color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); border-radius: 6px;
+      font-size: 13px; pointer-events: none;
     }
-    button[data-color="red"] { background-color:red; }
-    button[data-color="green"] { background-color:green; }
-    button[data-color="orange"] { background-color:orange; color:#000; }
-    button[data-color="black"] { background-color:#444; }
 
-    #activeColor { width:22px; height:22px; border-radius:50%; border:3px solid #333; background-color: red; }
+    #lockBtn {
+      padding: 10px 14px; border: none; font-weight: bold; cursor: pointer;
+      background: #444; color: white; border-radius: 6px; font-size: 13px;
+      transition: background 0.2s;
+    }
+    #lockBtn.active { background: #c0392b; box-shadow: 0 0 8px rgba(192,57,43,0.6); }
+
+    /* Claiming toggle switch */
+    #claimToggleWrap {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: bold; color: #555;
+    }
+    .toggle-switch {
+      position: relative; width: 44px; height: 24px; flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; cursor: pointer; top:0; left:0; right:0; bottom:0;
+      background: #ccc; border-radius: 24px; transition: 0.3s;
+    }
+    .toggle-slider:before {
+      position: absolute; content: ""; height: 18px; width: 18px;
+      left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s;
+    }
+    input:checked + .toggle-slider { background: #27ae60; }
+    input:checked + .toggle-slider:before { transform: translateX(20px); }
 
     #scoreboard {
       position:absolute; top:15vh; right:10px;
@@ -49,7 +69,7 @@
       min-width: 120px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
 
-    /* --- MOBILE DECK DRAWER --- */
+    /* DECK DRAWER */
     #card-drawer {
       position: fixed; left: -85vw; top: 15vh; width: 85vw; height: auto;
       background: #fdfdfd; box-shadow: 5px 0 15px rgba(0,0,0,0.3);
@@ -76,23 +96,30 @@
       box-sizing: border-box; overflow: hidden;
     }
     .card-slot.occupied { border: 2px solid #2c3e50; }
-    .card-slot.selected { border-color: #3498db; background: #f0f7ff; box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3); }
+    .card-slot.selected { border-color: #3498db; background: #f0f7ff; box-shadow: 0 5px 15px rgba(52,152,219,0.3); }
     .battle-slot { border: 2px dashed #2c3e50; }
     .battle-slot.occupied { border: 3px solid #e74c3c !important; }
-
     .card-title { font-weight: 800; font-size: 11px; text-transform: uppercase; line-height: 1.2; }
 
-    /* --- BUTTON LAYOUT --- */
+    /* DRAWER BUTTONS */
     #drawer-controls { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
     .btn-row { display: flex; gap: 6px; }
     #drawer-controls button { flex: 1; padding: 12px 5px; border: none; border-radius: 8px; font-weight: bold; color: white; font-size: 10px; cursor: pointer; }
-    
     #drawBtn { background: #247ad1; }
     #battleBtn { background: #34495e; }
     #resetHandBtn { background: #7f8c8d; }
-    #viewCompletedBtn, #viewAllBtn { background: #8e44ad; }
+    #viewCompletedBtn { background: #8e44ad; }
+    #viewAllBtn { background: #8e44ad; }
+    #powerupsBtn { background: #d35400; position: relative; overflow: visible; }
+    #powerup-badge {
+      position: absolute; top: -7px; right: -7px;
+      background: #f1c40f; color: #333; font-size: 10px; font-weight: bold;
+      border-radius: 50%; width: 20px; height: 20px;
+      display: none; align-items: center; justify-content: center;
+      border: 2px solid white;
+    }
 
-    /* --- POPUPS --- */
+    /* POPUPS */
     .popup-overlay {
       position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
       background: white; padding: 25px; border-radius: 20px;
@@ -103,29 +130,126 @@
     #card-tooltip { z-index: 4000 !important; }
     .scroll-list { display: flex; flex-direction: column; gap: 10px; margin: 15px 0; max-height: 40vh; overflow-y: auto; padding: 5px; }
     .list-item { padding: 10px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; }
+    .list-item.selected { background: #f0f7ff; border-color: #3498db; }
 
     .special-tagP { background: #dea60b; color: white; font-size: 10px; padding: 4px 10px; border-radius: 12px; margin: 5px 2px; font-weight: bold; display: inline-block; }
     .special-tag2 { background: #000; color: white; font-size: 10px; padding: 4px 10px; border-radius: 12px; margin: 5px 2px; font-weight: bold; display: inline-block; }
-    
+    .special-tagDual { background: #8e44ad; color: white; font-size: 10px; padding: 4px 10px; border-radius: 12px; margin: 5px 2px; font-weight: bold; display: inline-block; }
+
     .action-btn { border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; }
     .close-btn { background: #2c3e50; width: 100%; margin-bottom: 8px; }
     #tt-discardBtn { background: #e74c3c; flex: 1; }
     #tt-completeBtn { background: #27ae60; flex: 1; }
+    #tt-completePowerupBtn { background: #8e44ad; flex: 1; display: none; }
 
-    #addChallengeBtn { background: #247ad1; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; margin-bottom: 10px; display:none; }
-    #signOutBtn { position: absolute; bottom: 20px; right: 15px; width: 45px; height: 45px; z-index: 1000; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); 
-                 cursor: pointer;display: flex;align-items: center;justify-content: center;padding: 10px;transition: background 0.2s; border-radius: 6px; background: white;
+    #addChallengeBtn {
+      background: #247ad1; color: white; border: none; padding: 12px; border-radius: 8px;
+      font-weight: bold; width: 100%; margin-top: 10px; margin-bottom: 10px; display: none; cursor: pointer;
     }
-    
-    #signOutBtn:hover {
-      background: #f0f0f0;
+    #addChallengeBtn:disabled { background: #95a5a6; cursor: not-allowed; }
+
+    #signOutBtn {
+      position: absolute; bottom: 20px; right: 15px; width: 45px; height: 45px; z-index: 1000;
+      border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; padding: 10px;
+      transition: background 0.2s; border-radius: 6px; background: white;
     }
-    
-    #signOutBtn svg {
-      pointer-events: none;
-      width: 24px;
-      height: 24px;
-      color: #c0392b;
+    #signOutBtn:hover { background: #f0f0f0; }
+    #signOutBtn svg { pointer-events: none; width: 24px; height: 24px; color: #c0392b; }
+
+    /* TEAM SELECT */
+    #team-select-popup {
+      position: fixed; top:0; left:0; width:100%; height:100%;
+      background: rgba(0,0,0,0.65); z-index: 5000;
+      display: none; align-items: center; justify-content: center;
+    }
+    #team-select-popup.active { display: flex; }
+    #team-select-inner {
+      background: white; border-radius: 20px; padding: 30px 25px;
+      width: 85%; max-width: 360px; text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      from { transform: scale(0.7); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    #team-select-inner h2 { margin: 0 0 8px; color: #2c3e50; font-size: 22px; }
+    #team-select-inner p { margin: 0 0 22px; color: #666; font-size: 14px; }
+    .team-btn {
+      display: block; width: 100%; padding: 16px; margin-bottom: 12px;
+      border: none; border-radius: 12px; font-size: 16px; font-weight: bold;
+      color: white; cursor: pointer; letter-spacing: 0.5px;
+      transition: transform 0.15s, box-shadow 0.15s;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    }
+    .team-btn.red { background: linear-gradient(135deg, #e74c3c, #c0392b); box-shadow: 0 4px 15px rgba(231,76,60,0.4); }
+    .team-btn.green { background: linear-gradient(135deg, #27ae60, #1e8449); box-shadow: 0 4px 15px rgba(39,174,96,0.4); }
+    .team-btn.orange { background: linear-gradient(135deg, #e67e22, #d35400); box-shadow: 0 4px 15px rgba(230,126,34,0.4); }
+    #team-select-signout { background: none; border: 1px solid #ccc; color: #666; padding: 10px; border-radius: 8px; font-size: 13px; cursor: pointer; margin-top: 4px; width: 100%; }
+
+    /* TAB BAR */
+    .tab-bar { display: flex; border-bottom: 2px solid #eee; margin-bottom: 10px; }
+    .tab-btn {
+      flex: 1; padding: 10px 0; border: none; background: none;
+      font-weight: bold; font-size: 13px; cursor: pointer; color: #999;
+      border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s;
+    }
+    .tab-btn.active { color: #2c3e50; border-bottom-color: #2c3e50; }
+
+    /* POWERUPS POPUP */
+    #powerup-count-display { font-size: 36px; font-weight: bold; color: #d35400; margin: 4px 0 16px; }
+    .powerup-option {
+      border: 2px solid #eee; border-radius: 12px; padding: 14px 14px;
+      margin-bottom: 10px; cursor: pointer; text-align: left;
+      background: white; transition: all 0.2s; width: 100%; box-sizing: border-box;
+    }
+    .powerup-option:hover { border-color: #d35400; background: #fff8f4; }
+    .powerup-option h4 { margin: 0 0 4px; font-size: 14px; color: #2c3e50; }
+    .powerup-option p { margin: 0; font-size: 12px; color: #666; }
+    .powerup-option.disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+    /* SWAP */
+    .swap-team-btn {
+      display: block; width: 100%; padding: 14px; margin-bottom: 10px;
+      border: none; border-radius: 10px; font-size: 15px; font-weight: bold;
+      color: white; cursor: pointer; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    }
+    .swap-card-item {
+      padding: 12px; border: 2px solid #ddd; border-radius: 8px;
+      cursor: pointer; font-weight: bold; font-size: 13px; margin-bottom: 8px;
+      transition: all 0.2s; text-align: left;
+    }
+    .swap-card-item:hover { border-color: #3498db; background: #f0f7ff; }
+    .swap-card-item.selected { border-color: #3498db; background: #f0f7ff; }
+
+    /* ANIMATIONS */
+    @keyframes flashGreen {
+      0%,100% { background: white; }
+      40% { background: #d4efdf; }
+    }
+    @keyframes flashGold {
+      0%,100% { background: white; }
+      40% { background: #fef9e7; border-color: #f1c40f; }
+    }
+    @keyframes slideAway {
+      to { opacity: 0; transform: translateX(-60px) scale(0.85); }
+    }
+    .anim-complete { animation: flashGreen 0.7s ease; }
+    .anim-complete-powerup { animation: flashGold 0.7s ease; }
+    .anim-discard { animation: slideAway 0.35s ease forwards; }
+
+    /* FEEDBACK OVERLAY */
+    #feedback-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 9999; display: flex; align-items: center; justify-content: center;
+      pointer-events: none; opacity: 0; transition: opacity 0.3s;
+    }
+    #feedback-overlay.show { opacity: 1; }
+    #feedback-text {
+      background: rgba(0,0,0,0.78); color: white; font-size: 20px; font-weight: bold;
+      padding: 20px 28px; border-radius: 16px; text-align: center; max-width: 80%;
+      line-height: 1.5;
     }
   </style>
 </head>
@@ -134,83 +258,166 @@
 <div id="map"></div>
 <button id="rulesBtn" onclick="openPopup('rules-popup')">Battle for Boston</button>
 
+<!-- CONTROLS BAR -->
 <div id="controls">
   <button id="loginBtn">Sign in with Google</button>
-  <div id="colorPicker" style="display:none;">
-    <button data-color="red">Red</button><button data-color="green">Green</button><button data-color="orange">Orange</button><button data-color="black">Lock</button>
-    <div id="activeColor"></div>
+  <div id="teamControls" style="display:none; align-items:center; gap:8px; flex-wrap:wrap;">
+    <div id="claimToggleWrap">
+      <label class="toggle-switch">
+        <input type="checkbox" id="claimToggle" checked>
+        <span class="toggle-slider"></span>
+      </label>
+      <span id="claimLabel">Claim ON</span>
+    </div>
+    <button id="teamColorBtn">Team</button>
+    <button id="lockBtn">🔒 Lock</button>
   </div>
   <button id="resetBtn" style="display:none;">Reset Map</button>
 </div>
 
 <div id="scoreboard"><strong>Scoreboard</strong></div>
 
+<!-- DECK DRAWER -->
 <div id="card-drawer">
-    <div id="drawer-tab" onclick="toggleDrawer()">DECK</div>
-    <h4 style="margin:0 0 5px 0; color: #34495e; font-size: 14px;">Your Challenges</h4>
-    <div id="deck-container"></div>
-    <div id="drawer-controls">
-        <div class="btn-row">
-            <button id="drawBtn">Draw Challenge</button>
-            <button id="battleBtn">Battle Challenge</button>
-            <button id="resetHandBtn">Reset Hand</button>
-        </div>
-        <div class="btn-row">
-            <button id="viewCompletedBtn" onclick="openCompletedPopup()">Completed Challenges</button>
-            <button id="viewAllBtn" onclick="openViewAllPopup()">View All Challenges</button>
-        </div>
+  <div id="drawer-tab" onclick="toggleDrawer()">DECK</div>
+  <h4 style="margin:0 0 5px 0; color:#34495e; font-size:14px;">Your Challenges</h4>
+  <div id="deck-container"></div>
+  <div id="drawer-controls">
+    <div class="btn-row">
+      <button id="drawBtn">Draw Challenge</button>
+      <button id="battleBtn">Battle Challenge</button>
+      <button id="resetHandBtn">Reset Hand</button>
     </div>
+    <div class="btn-row">
+      <button id="viewCompletedBtn" onclick="openCompletedPopup()">Completed</button>
+      <button id="viewAllBtn" onclick="openViewAllPopup()">View All</button>
+      <button id="powerupsBtn" onclick="openPowerupsPopup()">⚡ Powerups<span id="powerup-badge">0</span></button>
+    </div>
+  </div>
 </div>
 
+<!-- CARD TOOLTIP -->
 <div id="card-tooltip" class="popup-overlay">
-    <h3 id="tt-title"></h3>
-    <p id="tt-desc"></p>
-    <div id="tt-stars"></div><div id="tt-tag"></div>
-    <div style="margin-top: 15px;">
-        <button class="action-btn close-btn" onclick="closePopup('card-tooltip')">Close</button>
-        <div id="tt-action-row" class="btn-row">
-            <button id="tt-discardBtn" class="action-btn">Discard</button>
-            <button id="tt-completeBtn" class="action-btn">Complete</button>
-        </div>
+  <h3 id="tt-title"></h3>
+  <p id="tt-desc"></p>
+  <div id="tt-stars"></div>
+  <div id="tt-tag"></div>
+  <div id="tt-dual-tag"></div>
+  <div style="margin-top:15px;">
+    <button class="action-btn close-btn" onclick="closePopup('card-tooltip')">Close</button>
+    <div id="tt-action-row" class="btn-row" style="flex-wrap:wrap; gap:6px;">
+      <button id="tt-discardBtn" class="action-btn">Discard</button>
+      <button id="tt-completeBtn" class="action-btn">Complete</button>
+      <button id="tt-completePowerupBtn" class="action-btn" style="background:#8e44ad; display:none; width:100%; margin-top:4px;">Complete + ⚡ Powerup</button>
     </div>
+  </div>
 </div>
 
+<!-- COMPLETED POPUP -->
 <div id="completed-popup" class="popup-overlay">
-    <h3>Completed</h3>
-    <div id="completed-list" class="scroll-list"></div>
-    <button class="action-btn close-btn" onclick="closePopup('completed-popup')">Close</button>
+  <h3>Completed</h3>
+  <div id="completed-list" class="scroll-list"></div>
+  <button class="action-btn close-btn" onclick="closePopup('completed-popup')">Close</button>
 </div>
 
+<!-- VIEW ALL POPUP -->
 <div id="view-all-popup" class="popup-overlay">
-    <h3>All Challenges</h3>
-    <div id="all-challenges-list" class="scroll-list"></div>
-    <div id="all-challenge-detail" style="font-size: 13px; color: #666; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">Select challenge to view info</div>
-    <button id="addChallengeBtn">Add Challenge to Deck</button>
-    <button class="action-btn close-btn" onclick="closePopup('view-all-popup')">Close</button>
+  <h3>All Challenges</h3>
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tabRegular" onclick="switchViewAllTab('regular')">Regular</button>
+    <button class="tab-btn" id="tabBattle" onclick="switchViewAllTab('battle')">Battle</button>
+  </div>
+  <div id="all-challenges-list" class="scroll-list"></div>
+  <div id="all-challenge-detail" style="font-size:13px;color:#666;margin-top:10px;border-top:1px solid #eee;padding-top:10px;">Select a challenge to view info</div>
+  <button id="addChallengeBtn">Add Challenge to Hand</button>
+  <button class="action-btn close-btn" onclick="closePopup('view-all-popup')">Close</button>
 </div>
 
+<!-- RULES POPUP -->
 <div id="rules-popup" class="popup-overlay">
-    <h3>Basic Rules & Information </h3>
-    <ul style="font-size: 14px; text-align: left; padding-left: 10px;">
-        <li><strong>Begin playing:</strong> Open the deck tab and draw 7 challenges to your hand.</li>
-        <li><strong>Claiming:</strong> Tap a neighborhood with your color upon completing a challenge, tap again to remove claim if you made a mistake.</li>
-        <li><strong>Battle Challenge:</strong> Battle an opposing neighborhood if you own 1/3 of the surrounding neighborhoods, draw battle challenge card if you are initiating. Use the lock button to lock ownership for winner of challenge</li>
-        <li><strong>Powerups:</strong> If you complete a challenge with a powerup, choose one of the following:
-        <ul>
-          <li>Discard your entire hard, draw new cards</li>
-          <li>Swap one challenge with an opponent (their deck will be revealed, you choose the card)</li>
-          <li>Start a battle without controlling 1/3 of adjacent neighborhoods</li>
-          <li>Freeze opposing teams for 5 minutes outside of battle [ONLY ONE USE PER TEAM PER GAME]</li>
-        </ul></li>
-        <li><strong>Remember:</strong> Draw 1 new challenge after each one you complete. You cannot discard challenges aside from earning a powerup or pulling a duplicate</li>
-        <li><strong>Full Rules:</strong> Consult <a href="https://docs.google.com/document/d/12UeE2URIqaDAgssEYz7DkNpZFbi_vXyOhMMXMsztil4">rules document</a> for full detailed explanations</li>
-        <li><strong>Note:</strong> You must be signed into a Google account in order to play and save your progress.</li>
-
-    </ul>
-    <button class="action-btn close-btn" onclick="closePopup('rules-popup')">Close</button>
+  <h3>Basic Rules & Information</h3>
+  <ul style="font-size:14px;text-align:left;padding-left:10px;">
+    <li><strong>Begin playing:</strong> Open the deck tab and draw up to 3 challenges to your hand.</li>
+    <li><strong>Claiming:</strong> Enable the Claim toggle, then tap a neighborhood. Tap again to remove if you made a mistake.</li>
+    <li><strong>Battle Challenge:</strong> Battle an opposing neighborhood if you own 1/3 of surrounding neighborhoods. Use the Lock button to lock ownership for the winner.</li>
+    <li><strong>Powerups:</strong> Complete a ⚡ challenge to earn powerups. Use them from the Powerups button.<ul>
+      <li>Discard hand &amp; draw new cards</li>
+      <li>Swap a challenge with an opponent</li>
+      <li>Start a battle without 1/3 adjacency</li>
+      <li>Freeze opposing teams for 5 minutes [ONE USE PER TEAM]</li>
+    </ul></li>
+    <li><strong>Dual-threshold challenges:</strong> Some challenges show a ⚡? tag — completing at the higher threshold earns a powerup.</li>
+    <li><strong>Remember:</strong> Draw 1 new challenge after each completion. Max hand size is 3.</li>
+    <li><strong>Full Rules:</strong> <a href="https://docs.google.com/document/d/12UeE2URIqaDAgssEYz7DkNpZFbi_vXyOhMMXMsztil4">rules document</a></li>
+    <li><strong>Note:</strong> You must sign in and join a team to edit the map.</li>
+  </ul>
+  <button class="action-btn close-btn" onclick="closePopup('rules-popup')">Close</button>
 </div>
 
-<button id="signOutBtn" style="display:none;" onclick="logout()" title="Sign Out">
+<!-- POWERUPS POPUP -->
+<div id="powerups-popup" class="popup-overlay">
+  <h3>⚡ Powerups</h3>
+  <div style="font-size:14px;color:#666;">Your powerups:</div>
+  <div id="powerup-count-display">0</div>
+  <div id="powerup-options" style="text-align:left;">
+    <div class="powerup-option" id="pu-discard" onclick="usePowerup('discard')">
+      <h4>🔀 Discard Hand &amp; Redraw</h4>
+      <p>Discard your entire hand and draw 3 fresh challenges.</p>
+    </div>
+    <div class="powerup-option" id="pu-swap" onclick="usePowerup('swap')">
+      <h4>🔄 Swap a Challenge</h4>
+      <p>Steal a challenge from an opponent and give one of yours in return.</p>
+    </div>
+    <div class="powerup-option" id="pu-forcebattle" onclick="usePowerup('forcebattle')">
+      <h4>⚔️ Force Battle</h4>
+      <p>Start a battle without controlling 1/3 of adjacent neighborhoods.</p>
+    </div>
+    <div class="powerup-option" id="pu-freeze" onclick="usePowerup('freeze')">
+      <h4>❄️ Freeze Opponents</h4>
+      <p>Freeze opposing teams for 5 minutes. One use per team per game.</p>
+    </div>
+  </div>
+  <button class="action-btn close-btn" onclick="closePopup('powerups-popup')">Close</button>
+</div>
+
+<!-- SWAP POPUP -->
+<div id="swap-popup" class="popup-overlay" style="z-index:4500;">
+  <h3 id="swap-title">Swap Challenge</h3>
+  <div id="swap-step1">
+    <p style="font-size:13px;color:#666;">Choose a team to swap with:</p>
+    <div id="swap-team-list"></div>
+    <button class="action-btn close-btn" style="margin-top:8px;" onclick="closePopup('swap-popup')">Cancel</button>
+  </div>
+  <div id="swap-step2" style="display:none;">
+    <p style="font-size:13px;color:#666;">Choose 1 card to <strong>steal</strong> from their hand:</p>
+    <div id="swap-opponent-cards"></div>
+    <button class="action-btn close-btn" style="margin-top:8px;" onclick="swapBack()">← Back</button>
+  </div>
+  <div id="swap-step3" style="display:none;">
+    <p style="font-size:13px;color:#666;">Choose 1 card from <strong>your hand</strong> to give them:</p>
+    <div id="swap-my-cards"></div>
+    <button class="action-btn close-btn" style="margin-top:8px;" onclick="swapBack2()">← Back</button>
+  </div>
+</div>
+
+<!-- TEAM SELECT -->
+<div id="team-select-popup">
+  <div id="team-select-inner">
+    <h2>Join a Team</h2>
+    <p>Pick your team color. You'll claim all territory as this color for the whole game.</p>
+    <button class="team-btn red" onclick="joinTeam('red')">🔴 Red Team</button>
+    <button class="team-btn green" onclick="joinTeam('green')">🟢 Green Team</button>
+    <button class="team-btn orange" onclick="joinTeam('orange')">🟠 Orange Team</button>
+    <button id="team-select-signout" onclick="doSignOut()">Sign out instead</button>
+  </div>
+</div>
+
+<!-- FULLSCREEN FEEDBACK -->
+<div id="feedback-overlay">
+  <div id="feedback-text"></div>
+</div>
+
+<button id="signOutBtn" style="display:none;" onclick="doSignOut()" title="Sign Out">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
     <polyline points="16 17 21 12 16 7"></polyline>
@@ -222,8 +429,8 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAv9PMEqDgXaqpuHzAgjJDPthwYFZaxaRg",
@@ -238,236 +445,609 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth();
 
-let currentUser = null, selectedColor = "red", selected = {}, geojsonLayer = null, lockMarkers = L.layerGroup();
-let challenges = [], battleChallenges = [], userHand = [], completedChallenges = [], battleCard = null, selectedSlotIndex = null;
-let tempSelectedAllIndex = null;
+// ─── STATE ────────────────────────────────────────────────
+let currentUser = null;
+let currentTeam = null;
+let selected = {};
+let geojsonLayer = null;
+let lockMarkers = L.layerGroup();
+let isLockMode = false;
+let claimEnabled = true;
 
-onAuthStateChanged(auth, user => {
-  if(user){
-    // Whitelist check removed: Any authenticated user can now play.
-    currentUser = user;
-    onSnapshot(doc(db, "userDecks", user.uid), ds => {
-        if(ds.exists()){
-            const d = ds.data();
-            userHand = d.hand || [];
-            battleCard = d.battleCard || null;
-            completedChallenges = d.completed || [];
-        }
-        renderHand();
-    });
-  } else {
-    currentUser = null; userHand = []; battleCard = null; completedChallenges = []; renderHand();
-  }
-  updateUI();
-});
+let challenges = [], battleChallenges = [];
+let userHand = [], completedChallenges = [], battleCard = null;
+let selectedSlotIndex = null;
+let tempSelectedAllIndex = null, viewAllTab = 'regular';
+let powerupCount = 0;
 
-async function saveDeck() {
-    if(!currentUser) return;
-    await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand, battleCard, completed: completedChallenges });
+let swapTargetTeam = null, swapTargetCard = null, swapOpponentFullHand = [];
+
+// ─── FEEDBACK ─────────────────────────────────────────────
+function showFeedback(msg, duration = 1800) {
+  const el = document.getElementById('feedback-overlay');
+  document.getElementById('feedback-text').innerHTML = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), duration);
 }
 
-window.openPopup = (id) => document.getElementById(id).style.display = 'block';
-window.closePopup = (id) => document.getElementById(id).style.display = 'none';
+// ─── POPUPS ───────────────────────────────────────────────
+window.openPopup = id => document.getElementById(id).style.display = 'block';
+window.closePopup = id => document.getElementById(id).style.display = 'none';
 window.toggleDrawer = () => document.getElementById('card-drawer').classList.toggle('open');
 
-// --- LOGIN LOGIC ---
-document.getElementById('loginBtn').onclick = () => {
-    const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider).catch(error => console.error(error));
+// ─── CLAIM TOGGLE ─────────────────────────────────────────
+document.getElementById('claimToggle').addEventListener('change', e => {
+  claimEnabled = e.target.checked;
+  document.getElementById('claimLabel').textContent = claimEnabled ? 'Claim ON' : 'Claim OFF';
+});
+
+// ─── LOCK BUTTON ──────────────────────────────────────────
+document.getElementById('lockBtn').addEventListener('click', () => {
+  isLockMode = !isLockMode;
+  const btn = document.getElementById('lockBtn');
+  btn.classList.toggle('active', isLockMode);
+  btn.textContent = isLockMode ? '🔒 Locking...' : '🔒 Lock';
+});
+
+// ─── VIEW ALL CHALLENGES ──────────────────────────────────
+window.switchViewAllTab = tab => {
+  viewAllTab = tab;
+  document.getElementById('tabRegular').classList.toggle('active', tab === 'regular');
+  document.getElementById('tabBattle').classList.toggle('active', tab === 'battle');
+  renderViewAllList();
 };
 
-function renderHand() {
-    const container = document.getElementById('deck-container');
-    container.innerHTML = '';
-    for (let i = 0; i < 7; i++) {
-        const slot = document.createElement('div');
-        slot.className = 'card-slot' + (userHand[i] ? ' occupied' : '') + (selectedSlotIndex === i ? ' selected' : '');
-        slot.innerHTML = userHand[i] ? `<div class="card-title">${userHand[i].title}</div>` : '<span style="color:#ccc; font-size:9px;">EMPTY</span>';
-        slot.onclick = () => { selectedSlotIndex = i; renderHand(); if(userHand[i]) showCardTooltip(userHand[i]); };
-        container.appendChild(slot);
-    }
-    const bSlot = document.createElement('div');
-    bSlot.className = 'card-slot battle-slot' + (battleCard ? ' occupied' : '') + (selectedSlotIndex === 7 ? ' selected' : '');
-    bSlot.innerHTML = battleCard ? `<div class="card-title">${battleCard.title}</div>` : '<span style="color:#000; font-size:9px; font-weight:bold;">BATTLE CHALLENGE</span>';
-    bSlot.onclick = () => { selectedSlotIndex = 7; renderHand(); if(battleCard) showCardTooltip(battleCard); };
-    container.appendChild(bSlot);
+function renderViewAllList() {
+  const list = document.getElementById('all-challenges-list');
+  const detail = document.getElementById('all-challenge-detail');
+  const addBtn = document.getElementById('addChallengeBtn');
+  list.innerHTML = '';
+  detail.textContent = 'Select a challenge to view info';
+  addBtn.style.display = 'none';
+  tempSelectedAllIndex = null;
+
+  const source = viewAllTab === 'regular' ? challenges : battleChallenges;
+  source.forEach((c, idx) => {
+    const item = document.createElement('div');
+    item.className = 'list-item';
+    let label = c.title;
+    if (c.stars) label += ' ⚡'.repeat(c.stars);
+    if (c.dualThreshold) label += ' ⚡?';
+    item.textContent = label;
+    item.onclick = () => {
+      tempSelectedAllIndex = idx;
+      document.querySelectorAll('#all-challenges-list .list-item').forEach(el => el.classList.remove('selected'));
+      item.classList.add('selected');
+      let detailHTML = `<strong>${c.title}</strong><br>${c.description || 'No rules.'}`;
+      if (c.dualThreshold) detailHTML += `<br><em style="color:#8e44ad;font-size:12px;">⚡? Completing at the higher threshold earns a powerup.</em>`;
+      detail.innerHTML = detailHTML;
+      addBtn.style.display = 'block';
+      addBtn.disabled = viewAllTab === 'battle';
+    };
+    list.appendChild(item);
+  });
 }
-
-function showCardTooltip(card) {
-    document.getElementById('tt-title').innerText = card.title;
-    document.getElementById('tt-desc').innerText = card.description || "No rules provided.";
-    document.getElementById('tt-stars').innerHTML = card.stars ? `<div class="special-tagP">Powerup ${'★'.repeat(card.stars)}</div>` : '';
-    document.getElementById('tt-tag').innerHTML = card.twoTerritories ? '<div class="special-tag2">CLAIM TWO NEIGHBORHOODS</div>' : '';
-    
-    const isCompleted = completedChallenges.includes(card) && selectedSlotIndex === null;
-    document.getElementById('tt-action-row').style.display = isCompleted ? 'none' : 'flex';
-    
-    openPopup('card-tooltip');
-}
-
-document.getElementById('tt-discardBtn').onclick = () => {
-    if (selectedSlotIndex === null) return;
-    if (selectedSlotIndex === 7) battleCard = null; else userHand.splice(selectedSlotIndex, 1);
-    selectedSlotIndex = null; closePopup('card-tooltip'); saveDeck();
-};
-
-document.getElementById('tt-completeBtn').onclick = () => {
-    if (selectedSlotIndex === null) return;
-    const card = (selectedSlotIndex === 7) ? battleCard : userHand[selectedSlotIndex];
-    if(!card) return;
-    completedChallenges.push(card);
-    if (selectedSlotIndex === 7) battleCard = null; else userHand.splice(selectedSlotIndex, 1);
-    selectedSlotIndex = null; closePopup('card-tooltip'); saveDeck();
-};
-
-document.getElementById('drawBtn').onclick = () => {
-    if (userHand.length >= 7) return alert("Hand full");
-    userHand.push(challenges[Math.floor(Math.random() * challenges.length)]);
-    saveDeck();
-};
-
-document.getElementById('battleBtn').onclick = () => {
-    if (battleCard) return alert("Battle slot occupied");
-    battleCard = battleChallenges[Math.floor(Math.random() * battleChallenges.length)];
-    saveDeck(); showCardTooltip(battleCard);
-};
-
-document.getElementById('resetHandBtn').onclick = () => {
-    if(confirm("Are you sure you want to reset? This will remove all cards in your hand and all completed challenges.")) {
-        userHand = [];
-        completedChallenges = [];
-        battleCard = null;
-        saveDeck();
-    }
-};
-
-window.openCompletedPopup = () => {
-    const list = document.getElementById('completed-list');
-    list.innerHTML = completedChallenges.length ? '' : 'No challenges completed yet.';
-    completedChallenges.forEach(c => {
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        item.innerText = c.title;
-        item.onclick = () => { selectedSlotIndex = null; showCardTooltip(c); };
-        list.appendChild(item);
-    });
-    openPopup('completed-popup');
-};
 
 window.openViewAllPopup = () => {
-    const list = document.getElementById('all-challenges-list');
-    const detail = document.getElementById('all-challenge-detail');
-    const addBtn = document.getElementById('addChallengeBtn');
-    list.innerHTML = '';
-    tempSelectedAllIndex = null;
-    addBtn.style.display = 'none';
-
-    challenges.forEach((c, idx) => {
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        item.innerText = c.title;
-        item.onclick = () => {
-            tempSelectedAllIndex = idx;
-            document.querySelectorAll('#all-challenges-list .list-item').forEach(el => el.classList.remove('selected'));
-            item.classList.add('selected');
-            detail.innerHTML = `<strong>${c.title}</strong><br>${c.description || 'No rules.'}`;
-            addBtn.style.display = 'block';
-        };
-        list.appendChild(item);
-    });
-    openPopup('view-all-popup');
+  viewAllTab = 'regular';
+  document.getElementById('tabRegular').classList.add('active');
+  document.getElementById('tabBattle').classList.remove('active');
+  renderViewAllList();
+  openPopup('view-all-popup');
 };
 
 document.getElementById('addChallengeBtn').onclick = () => {
-    if(tempSelectedAllIndex === null) return;
-    if(userHand.length >= 7) return alert("Hand full");
-    userHand.push(challenges[tempSelectedAllIndex]);
-    saveDeck();
-    closePopup('view-all-popup');
+  if (viewAllTab === 'battle' || tempSelectedAllIndex === null) return;
+  if (userHand.length >= 3) return alert("Hand full (max 3 challenges)");
+  userHand.push(challenges[tempSelectedAllIndex]);
+  saveDeck();
+  closePopup('view-all-popup');
 };
 
+// ─── COMPLETED POPUP ──────────────────────────────────────
+window.openCompletedPopup = () => {
+  const list = document.getElementById('completed-list');
+  list.innerHTML = completedChallenges.length ? '' : '<p style="color:#aaa;">No challenges completed yet.</p>';
+  completedChallenges.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'list-item';
+    item.textContent = c.title;
+    item.onclick = () => { selectedSlotIndex = null; showCardTooltip(c); };
+    list.appendChild(item);
+  });
+  openPopup('completed-popup');
+};
+
+// ─── CARD TOOLTIP ─────────────────────────────────────────
+function showCardTooltip(card) {
+  document.getElementById('tt-title').textContent = card.title;
+  document.getElementById('tt-desc').textContent = card.description || "No rules provided.";
+  document.getElementById('tt-stars').innerHTML = card.stars ? `<div class="special-tagP">Powerup ${'★'.repeat(card.stars)}</div>` : '';
+  document.getElementById('tt-tag').innerHTML = card.twoTerritories ? '<div class="special-tag2">CLAIM TWO NEIGHBORHOODS</div>' : '';
+  document.getElementById('tt-dual-tag').innerHTML = card.dualThreshold ? '<div class="special-tagDual">⚡? Higher threshold earns a Powerup</div>' : '';
+
+  const isCompleted = completedChallenges.includes(card) && selectedSlotIndex === null;
+  document.getElementById('tt-action-row').style.display = isCompleted ? 'none' : 'flex';
+
+  const cpBtn = document.getElementById('tt-completePowerupBtn');
+  cpBtn.style.display = (!isCompleted && card.dualThreshold) ? 'block' : 'none';
+
+  openPopup('card-tooltip');
+}
+
+document.getElementById('tt-discardBtn').onclick = () => {
+  if (selectedSlotIndex === null) return;
+  const popup = document.getElementById('card-tooltip');
+  popup.style.animation = 'none';
+  popup.classList.add('anim-discard');
+  setTimeout(() => {
+    popup.classList.remove('anim-discard');
+    if (selectedSlotIndex === 'battle') battleCard = null;
+    else userHand.splice(selectedSlotIndex, 1);
+    selectedSlotIndex = null;
+    closePopup('card-tooltip');
+    saveDeck();
+  }, 350);
+};
+
+document.getElementById('tt-completeBtn').onclick = () => {
+  if (selectedSlotIndex === null) return;
+  const card = selectedSlotIndex === 'battle' ? battleCard : userHand[selectedSlotIndex];
+  if (!card) return;
+  const popup = document.getElementById('card-tooltip');
+  popup.classList.add('anim-complete');
+
+  if (card.stars) {
+    powerupCount += card.stars;
+    setTimeout(() => showFeedback(`✅ Challenge complete!<br>+${card.stars} ⚡ Powerup${card.stars > 1 ? 's' : ''} earned!`), 200);
+  } else {
+    setTimeout(() => showFeedback('✅ Challenge complete!'), 200);
+  }
+
+  setTimeout(() => {
+    popup.classList.remove('anim-complete');
+    completedChallenges.push(card);
+    if (selectedSlotIndex === 'battle') battleCard = null;
+    else userHand.splice(selectedSlotIndex, 1);
+    selectedSlotIndex = null;
+    closePopup('card-tooltip');
+    saveDeck();
+  }, 700);
+};
+
+document.getElementById('tt-completePowerupBtn').onclick = () => {
+  if (selectedSlotIndex === null) return;
+  const card = selectedSlotIndex === 'battle' ? battleCard : userHand[selectedSlotIndex];
+  if (!card) return;
+  const popup = document.getElementById('card-tooltip');
+  popup.classList.add('anim-complete-powerup');
+  powerupCount += 1;
+  setTimeout(() => showFeedback('⚡ Higher threshold cleared!<br>+1 Powerup earned!', 2200), 200);
+  setTimeout(() => {
+    popup.classList.remove('anim-complete-powerup');
+    completedChallenges.push(card);
+    if (selectedSlotIndex === 'battle') battleCard = null;
+    else userHand.splice(selectedSlotIndex, 1);
+    selectedSlotIndex = null;
+    closePopup('card-tooltip');
+    saveDeck();
+  }, 700);
+};
+
+// ─── RENDER HAND ──────────────────────────────────────────
+function renderHand() {
+  const container = document.getElementById('deck-container');
+  container.innerHTML = '';
+
+  for (let i = 0; i < 3; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'card-slot' +
+      (userHand[i] ? ' occupied' : '') +
+      (selectedSlotIndex === i ? ' selected' : '');
+    slot.innerHTML = userHand[i]
+      ? `<div class="card-title">${userHand[i].title}</div>`
+      : '<span style="color:#ccc;font-size:9px;">EMPTY</span>';
+    slot.onclick = () => { selectedSlotIndex = i; renderHand(); if (userHand[i]) showCardTooltip(userHand[i]); };
+    container.appendChild(slot);
+  }
+
+  const bSlot = document.createElement('div');
+  bSlot.className = 'card-slot battle-slot' +
+    (battleCard ? ' occupied' : '') +
+    (selectedSlotIndex === 'battle' ? ' selected' : '');
+  bSlot.innerHTML = battleCard
+    ? `<div class="card-title">${battleCard.title}</div>`
+    : '<span style="color:#000;font-size:9px;font-weight:bold;">BATTLE CHALLENGE</span>';
+  bSlot.onclick = () => { selectedSlotIndex = 'battle'; renderHand(); if (battleCard) showCardTooltip(battleCard); };
+  container.appendChild(bSlot);
+
+  // Powerup badge
+  const badge = document.getElementById('powerup-badge');
+  badge.textContent = powerupCount;
+  badge.style.display = powerupCount > 0 ? 'flex' : 'none';
+}
+
+// ─── DRAW / BATTLE / RESET ────────────────────────────────
+document.getElementById('drawBtn').onclick = () => {
+  if (userHand.length >= 3) return alert("Hand full (max 3 challenges)");
+  if (!challenges.length) return alert("Challenges not loaded yet");
+  userHand.push(challenges[Math.floor(Math.random() * challenges.length)]);
+  saveDeck();
+};
+
+document.getElementById('battleBtn').onclick = () => {
+  if (battleCard) return alert("Battle slot already occupied");
+  if (!battleChallenges.length) return alert("Battle challenges not loaded yet");
+  battleCard = battleChallenges[Math.floor(Math.random() * battleChallenges.length)];
+  saveDeck();
+  showCardTooltip(battleCard);
+};
+
+document.getElementById('resetHandBtn').onclick = () => {
+  if (confirm("Reset your hand? This removes all cards and completed challenges.")) {
+    userHand = []; completedChallenges = []; battleCard = null; powerupCount = 0;
+    saveDeck();
+  }
+};
+
+// ─── SAVE DECK ────────────────────────────────────────────
+async function saveDeck() {
+  if (!currentUser) return;
+  await setDoc(doc(db, "userDecks", currentUser.uid), {
+    hand: userHand, battleCard, completed: completedChallenges, powerupCount
+  });
+  renderHand();
+}
+
+// ─── POWERUPS POPUP ───────────────────────────────────────
+window.openPowerupsPopup = () => {
+  document.getElementById('powerup-count-display').textContent = powerupCount;
+  document.querySelectorAll('.powerup-option').forEach(el => {
+    el.classList.toggle('disabled', powerupCount <= 0);
+  });
+  openPopup('powerups-popup');
+};
+
+window.usePowerup = async type => {
+  if (powerupCount <= 0) return;
+
+  if (type === 'discard') {
+    powerupCount--;
+    closePopup('powerups-popup');
+    showFeedback('🔀 Discarding hand...', 1200);
+    setTimeout(async () => {
+      userHand = [];
+      for (let i = 0; i < 3 && challenges.length; i++) {
+        userHand.push(challenges[Math.floor(Math.random() * challenges.length)]);
+      }
+      await saveDeck();
+      setTimeout(() => showFeedback('✅ New hand drawn!', 1500), 1300);
+    }, 1200);
+
+  } else if (type === 'swap') {
+    closePopup('powerups-popup');
+    openSwapFlow();
+
+  } else if (type === 'forcebattle') {
+    powerupCount--;
+    closePopup('powerups-popup');
+    showFeedback('⚔️ Force Battle activated!<br>You may start a battle without adjacency.', 2500);
+    await saveDeck();
+
+  } else if (type === 'freeze') {
+    powerupCount--;
+    closePopup('powerups-popup');
+    showFeedback('❄️ Freeze activated!<br>Opposing teams frozen for 5 minutes.', 2500);
+    await saveDeck();
+  }
+};
+
+// ─── SWAP FLOW ────────────────────────────────────────────
+async function openSwapFlow() {
+  swapTargetTeam = null; swapTargetCard = null; swapOpponentFullHand = [];
+  document.getElementById('swap-step1').style.display = 'block';
+  document.getElementById('swap-step2').style.display = 'none';
+  document.getElementById('swap-step3').style.display = 'none';
+  document.getElementById('swap-title').textContent = 'Swap — Pick a Team';
+
+  const colors = ['red', 'green', 'orange'].filter(c => c !== currentTeam);
+  const teamList = document.getElementById('swap-team-list');
+  teamList.innerHTML = '<p style="color:#aaa;font-size:13px;">Loading teams...</p>';
+  openPopup('swap-popup');
+
+  // Gather team data from Firestore
+  const teamData = {};
+  colors.forEach(c => { teamData[c] = { members: [], hand: [] }; });
+
+  const usersSnap = await getDocs(collection(db, "userTeams"));
+  const deckFetches = [];
+  usersSnap.forEach(d => {
+    const data = d.data();
+    if (data.team && teamData[data.team]) {
+      teamData[data.team].members.push(data.displayName || 'Player');
+      deckFetches.push(
+        getDoc(doc(db, "userDecks", d.id)).then(deckDoc => {
+          if (deckDoc.exists()) {
+            (deckDoc.data().hand || []).forEach(card => {
+              if (!teamData[data.team].hand.find(c => c.title === card.title)) {
+                teamData[data.team].hand.push(card);
+              }
+            });
+          }
+        })
+      );
+    }
+  });
+  await Promise.all(deckFetches);
+
+  teamList.innerHTML = '';
+  const colorMap = { red: '#e74c3c', green: '#27ae60', orange: '#e67e22' };
+  for (const color of colors) {
+    const btn = document.createElement('button');
+    btn.className = 'swap-team-btn';
+    btn.style.background = colorMap[color] || '#888';
+    const cap = color.charAt(0).toUpperCase() + color.slice(1);
+    const members = teamData[color].members.length ? teamData[color].members.join(', ') : 'No members yet';
+    btn.innerHTML = `${cap} Team<br><small style="font-weight:normal;font-size:11px;">${members}</small>`;
+    btn.onclick = () => showSwapStep2(color, teamData[color].hand);
+    teamList.appendChild(btn);
+  }
+}
+
+function showSwapStep2(team, theirHand) {
+  swapTargetTeam = team;
+  swapOpponentFullHand = theirHand;
+  document.getElementById('swap-step1').style.display = 'none';
+  document.getElementById('swap-step2').style.display = 'block';
+  const cap = team.charAt(0).toUpperCase() + team.slice(1);
+  document.getElementById('swap-title').textContent = `Steal from ${cap} Team`;
+
+  const container = document.getElementById('swap-opponent-cards');
+  container.innerHTML = '';
+  if (!theirHand.length) {
+    container.innerHTML = '<p style="color:#aaa;font-size:13px;">Their hand is empty.</p>';
+    return;
+  }
+  theirHand.forEach((card, idx) => {
+    const el = document.createElement('div');
+    el.className = 'swap-card-item';
+    el.textContent = card.title;
+    el.onclick = () => {
+      document.querySelectorAll('#swap-opponent-cards .swap-card-item').forEach(e => e.classList.remove('selected'));
+      el.classList.add('selected');
+      swapTargetCard = card;
+      setTimeout(() => showSwapStep3(), 300);
+    };
+    container.appendChild(el);
+  });
+}
+
+function showSwapStep3() {
+  document.getElementById('swap-step2').style.display = 'none';
+  document.getElementById('swap-step3').style.display = 'block';
+  document.getElementById('swap-title').textContent = 'Give One of Yours';
+
+  const container = document.getElementById('swap-my-cards');
+  container.innerHTML = '';
+  if (!userHand.length) {
+    container.innerHTML = '<p style="color:#aaa;font-size:13px;">Your hand is empty.</p>';
+    return;
+  }
+  userHand.forEach((card, idx) => {
+    const el = document.createElement('div');
+    el.className = 'swap-card-item';
+    el.textContent = card.title;
+    el.onclick = async () => {
+      document.querySelectorAll('#swap-my-cards .swap-card-item').forEach(e => e.classList.remove('selected'));
+      el.classList.add('selected');
+      await executeSwap(idx);
+    };
+    container.appendChild(el);
+  });
+}
+
+async function executeSwap(myCardIdx) {
+  powerupCount--;
+  const givenCard = userHand[myCardIdx];
+  userHand.splice(myCardIdx, 1);
+  userHand.push(swapTargetCard);
+  await saveDeck();
+  closePopup('swap-popup');
+  showFeedback(`🔄 Swap complete!<br>Stole: <strong>${swapTargetCard.title}</strong><br>Gave: <strong>${givenCard.title}</strong>`, 3000);
+}
+
+window.swapBack = () => {
+  document.getElementById('swap-step2').style.display = 'none';
+  document.getElementById('swap-step1').style.display = 'block';
+};
+window.swapBack2 = () => {
+  document.getElementById('swap-step3').style.display = 'none';
+  document.getElementById('swap-step2').style.display = 'block';
+};
+
+// ─── TEAM JOIN ────────────────────────────────────────────
+window.joinTeam = async color => {
+  currentTeam = color;
+  await setDoc(doc(db, "userTeams", currentUser.uid), {
+    team: color,
+    displayName: currentUser.displayName,
+    uid: currentUser.uid,
+    photo: currentUser.photoURL
+  });
+  document.getElementById('team-select-popup').classList.remove('active');
+
+  // Subscribe to deck now
+  onSnapshot(doc(db, "userDecks", currentUser.uid), ds => {
+    if (ds.exists()) {
+      const d = ds.data();
+      userHand = d.hand || [];
+      battleCard = d.battleCard || null;
+      completedChallenges = d.completed || [];
+      powerupCount = d.powerupCount || 0;
+    }
+    renderHand();
+  });
+
+  updateUI();
+};
+
+// ─── MAP SETUP ────────────────────────────────────────────
 const map = L.map('map', { zoomControl: false }).setView([42.3601, -71.0589], 12);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 lockMarkers.addTo(map);
 
-fetch('challenges.json').then(res => res.json()).then(d => challenges = d);
-fetch('battle-challenges.json').then(res => res.json()).then(d => battleChallenges = d);
+fetch('challenges.json').then(r => r.json()).then(d => { challenges = d; }).catch(() => {});
+fetch('battle-challenges.json').then(r => r.json()).then(d => { battleChallenges = d; }).catch(() => {});
 
-fetch('Boston Subdivisions.json').then(res => res.json()).then(data => {
-    data.features.forEach((f, i) => f._id = i.toString());
-    geojsonLayer = L.geoJSON(data, { 
-        onEachFeature: (f, l) => {
-            l.on('click', () => toggle(f._id));
-            l.on('mouseover', () => {
-                l.setStyle({ color: "#00fffb", weight: 4 });
-                const d = selected[f._id];
-                const img = d?.photo ? `<img src="${d.photo}" style="width:18px;height:18px;border-radius:50%;vertical-align:middle;margin-right:6px;">` : '';
-                l.bindTooltip(`<strong>${f.properties.name}</strong>${d ? '<br>' + img + d.userName : ''}`).openTooltip();
-            });
-            l.on('mouseout', () => { updateStyles(); l.closeTooltip(); });
-        }
-    }).addTo(map);
+fetch('Boston Subdivisions.json').then(r => r.json()).then(data => {
+  data.features.forEach((f, i) => f._id = i.toString());
+  geojsonLayer = L.geoJSON(data, {
+    onEachFeature: (f, l) => {
+      l.on('click', () => { if (claimEnabled) toggle(f._id); });
+      l.on('mouseover', () => {
+        l.setStyle({ color: "#00fffb", weight: 4 });
+        const d = selected[f._id];
+        const teamLabel = d ? buildTeamLabel(d) : '';
+        l.bindTooltip(`<strong>${f.properties.name}</strong>${teamLabel ? '<br>' + teamLabel : ''}`).openTooltip();
+      });
+      l.on('mouseout', () => { updateStyles(); l.closeTooltip(); });
+    }
+  }).addTo(map);
 });
 
+// ─── TOGGLE TERRITORY ─────────────────────────────────────
 async function toggle(id) {
-    if (!currentUser) return;
-    const cur = selected[id] || {};
-    
-    if (selectedColor === "black") {
-        if (cur.color) cur.isLocked = !cur.isLocked;
-    } else if (cur.userId === currentUser.uid && cur.color === selectedColor) {
-        delete selected[id];
+  if (!currentUser || !currentTeam) return;
+  const cur = selected[id] || {};
+
+  if (isLockMode) {
+    if (cur.team) { cur.isLocked = !cur.isLocked; selected[id] = cur; }
+  } else {
+    if (cur.team === currentTeam) {
+      delete selected[id];
     } else {
-        if (cur.isLocked && cur.userId !== currentUser.uid) return alert("This neighborhood is locked");
-        selected[id] = { color: selectedColor, userName: currentUser.displayName, userId: currentUser.uid, photo: currentUser.photoURL, isLocked: false };
+      if (cur.isLocked && cur.team !== currentTeam) return alert("This neighborhood is locked!");
+      // Get current team members
+      const snap = await getDocs(collection(db, "userTeams"));
+      const members = [];
+      snap.forEach(d => { if (d.data().team === currentTeam) members.push(d.data().displayName || 'Player'); });
+      selected[id] = { team: currentTeam, members, isLocked: false };
     }
+  }
 
-    updateStyles(); 
-    updateScoreboard();
-
-    await setDoc(doc(db, "mapState", "boston"), selected);
+  updateStyles();
+  updateScoreboard();
+  await setDoc(doc(db, "mapState", "boston"), selected);
 }
 
-onSnapshot(doc(db, "mapState", "boston"), ds => { if(ds.exists()){ selected = ds.data(); updateStyles(); updateScoreboard(); } });
+function buildTeamLabel(d) {
+  if (!d || !d.team) return '';
+  const cap = d.team.charAt(0).toUpperCase() + d.team.slice(1);
+  const memberStr = d.members && d.members.length ? d.members.join(' + ') : '';
+  const colorStr = d.team === 'orange' ? '#d35400' : d.team;
+  return `<span style="color:${colorStr};font-weight:bold;">${cap}${memberStr ? ` (${memberStr})` : ''}</span>`;
+}
+
+onSnapshot(doc(db, "mapState", "boston"), ds => {
+  if (ds.exists()) { selected = ds.data(); updateStyles(); updateScoreboard(); }
+});
 
 function updateStyles() {
-    if (!geojsonLayer) return; lockMarkers.clearLayers();
-    geojsonLayer.eachLayer(l => {
-        const d = selected[l.feature._id];
-        l.setStyle({ fillColor: d ? d.color : "#3388ff", fillOpacity: 0.45, color: "#ffffff", weight: 1.5 });
-        if(d?.isLocked) L.marker(l.getBounds().getCenter(), { icon: L.divIcon({ html: '🔒', className: 'lock-icon' }), interactive: false }).addTo(lockMarkers);
-    });
+  if (!geojsonLayer) return;
+  lockMarkers.clearLayers();
+  const colorMap = { red: 'red', green: 'green', orange: 'orange' };
+  geojsonLayer.eachLayer(l => {
+    const d = selected[l.feature._id];
+    const fillColor = d ? (colorMap[d.team] || '#3388ff') : '#3388ff';
+    l.setStyle({ fillColor, fillOpacity: 0.45, color: "#ffffff", weight: 1.5 });
+    if (d?.isLocked) {
+      L.marker(l.getBounds().getCenter(), {
+        icon: L.divIcon({ html: '🔒', className: 'lock-icon' }),
+        interactive: false
+      }).addTo(lockMarkers);
+    }
+  });
 }
 
 function updateScoreboard() {
-    const s = {}; 
-    Object.values(selected).forEach(i => {
-        if(i && i.userName) {
-            s[i.userName] = { points: (s[i.userName]?.points || 0) + 1, color: i.color };
+  const s = {};
+  Object.values(selected).forEach(d => {
+    if (!d || !d.team) return;
+    if (!s[d.team]) s[d.team] = { points: 0, members: d.members || [] };
+    s[d.team].points++;
+    if (d.members && d.members.length) s[d.team].members = d.members;
+  });
+
+  const colorMap = { red: '#e74c3c', green: '#27ae60', orange: '#d35400' };
+  document.getElementById("scoreboard").innerHTML = "<strong>Scoreboard</strong><hr style='margin:5px 0'>" +
+    Object.entries(s)
+      .sort((a, b) => b[1].points - a[1].points)
+      .map(([team, data]) => {
+        const cap = team.charAt(0).toUpperCase() + team.slice(1);
+        const memberStr = data.members.length ? ` (${data.members.join(' + ')})` : '';
+        return `<span style="color:${colorMap[team]||'#333'};font-weight:bold;">${cap}${memberStr}</span>: ${data.points}`;
+      })
+      .join("<br>");
+}
+
+// ─── AUTH ─────────────────────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    currentUser = user;
+    const teamDoc = await getDoc(doc(db, "userTeams", user.uid));
+    if (teamDoc.exists()) {
+      currentTeam = teamDoc.data().team;
+      onSnapshot(doc(db, "userDecks", user.uid), ds => {
+        if (ds.exists()) {
+          const d = ds.data();
+          userHand = d.hand || [];
+          battleCard = d.battleCard || null;
+          completedChallenges = d.completed || [];
+          powerupCount = d.powerupCount || 0;
         }
-    });
-    
-    document.getElementById("scoreboard").innerHTML = "<strong>Scoreboard</strong><hr style='margin:5px 0'>" + 
-        Object.entries(s)
-        .sort((a,b) => b[1].points - a[1].points)
-        .map(([name, data]) => `<span style="color:${data.color === 'black' ? '#333' : data.color}; font-weight:bold;">${name}</span>: ${data.points}`)
-        .join("<br>");
-}
-
-function updateUI() {
-    const isAuth = !!currentUser;
-    document.getElementById("loginBtn").style.display = isAuth ? "none" : "block";
-    document.getElementById("signOutBtn").style.display = isAuth ? "block" : "none";
-    document.getElementById("colorPicker").style.display = isAuth ? "flex" : "none";
-    document.getElementById("resetBtn").style.display = (currentUser?.email === "blatherstv@gmail.com") ? "block" : "none";
-}
-
-document.querySelectorAll("#colorPicker button[data-color]").forEach(btn => {
-    btn.onclick = () => { selectedColor = btn.dataset.color; document.getElementById("activeColor").style.backgroundColor = selectedColor === "black" ? "#444" : selectedColor; };
+        renderHand();
+      });
+    } else {
+      document.getElementById('team-select-popup').classList.add('active');
+    }
+  } else {
+    currentUser = null; currentTeam = null;
+    userHand = []; battleCard = null; completedChallenges = []; powerupCount = 0;
+    renderHand();
+  }
+  updateUI();
 });
 
-window.logout = () => auth.signOut();
-document.getElementById("resetBtn").onclick = async () => { if(confirm("Reset map?")) await setDoc(doc(db, "mapState", "boston"), {}); };
+function updateUI() {
+  const isAuth = !!currentUser;
+  const hasTeam = !!currentTeam;
+  document.getElementById("loginBtn").style.display = (!isAuth) ? "block" : "none";
+  document.getElementById("signOutBtn").style.display = isAuth ? "block" : "none";
+  document.getElementById("teamControls").style.display = (isAuth && hasTeam) ? "flex" : "none";
+  document.getElementById("resetBtn").style.display = (currentUser?.email === "blatherstv@gmail.com") ? "block" : "none";
+
+  if (currentTeam) {
+    const btn = document.getElementById('teamColorBtn');
+    const cap = currentTeam.charAt(0).toUpperCase() + currentTeam.slice(1);
+    btn.textContent = `${cap} Team`;
+    const bg = { red: '#e74c3c', green: '#27ae60', orange: '#e67e22' };
+    btn.style.background = bg[currentTeam] || '#888';
+  }
+}
+
+window.doSignOut = async () => {
+  await signOut(auth);
+  document.getElementById('team-select-popup').classList.remove('active');
+};
+
+document.getElementById('loginBtn').onclick = () => {
+  const provider = new GoogleAuthProvider();
+  signInWithPopup(auth, provider).catch(err => console.error(err));
+};
+
+document.getElementById("resetBtn").onclick = async () => {
+  if (confirm("Reset the entire map?")) await setDoc(doc(db, "mapState", "boston"), {});
+};
 </script>
 </body>
 </html>
