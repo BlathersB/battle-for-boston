@@ -66,6 +66,30 @@
     "twoTerritories": false
   },
   {
+    "title": "Find the oldest food",
+    "description": "The team that has found the food longest past its listed expiration date after 15 minutes wins.  Tie goes to the team that sends theirs first",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Find the most languaged",
+    "description": "The text may not be in a book or from your phone, but can be on any other printed material (e.g. a menu) or display (e.g. a billboard).",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Find the worst place",
+    "description": "The team at the place with the worst Google Maps rating after 15 minutes wins.  Teams may not check the ratings until they lock in their place.  Tie goes to the place with the most ratings.",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
+    "title": "Flag Race",
+    "description": "The first team to touch a flagpole flying the USA or Massachusetts flag wins the battle immediately.",
+    "stars": 0,
+    "twoTerritories": false
+  },
+  {
     "title": "Exit Civilization",
     "description": "First pair to verifiably get 500 meters away from a bus stop wins the battle immediately.",
     "stars": 0,
