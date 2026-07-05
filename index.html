@@ -153,7 +153,7 @@
     
     #signOutBtn:hover, #leaveTeamBtn:hover { background: #f0f0f0; }
     #signOutBtn svg { pointer-events: none; width: 24px; height: 24px; color: #c0392b; }
-    #leaveTeamBtn svg { pointer-events: none; width: 24px; height: 24px; color: #d35400; }
+    #leaveTeamBtn svg { pointer-events: none; width: 24px; height: 24px; color: #000000; }
   </style>
 </head>
 <body>
@@ -172,7 +172,10 @@
     <span id="modeStatusText">On</span>
   </div>
   <div id="colorPicker" style="display:none;">
-    <button data-color="red">Red</button><button data-color="green">Green</button><button data-color="orange">Orange</button><button data-color="black">Lock</button>
+    <button data-color="red" id="pick-red-btn">Red</button>
+    <button data-color="green" id="pick-green-btn">Green</button>
+    <button data-color="orange" id="pick-orange-btn">Orange</button>
+    <button data-color="black">Lock</button>
     <div id="activeColor"></div>
   </div>
   <button id="resetBtn" style="display:none;">Reset Map</button>
@@ -245,7 +248,7 @@
 
 <div id="team-popup" class="popup-overlay" style="z-index: 3500;">
     <h3>Select Your Team</h3>
-    <p style="font-size: 13px; color: #555;">Each team can have up to 3 players</p>
+    <p style="font-size: 13px; color: #555;">Each team color supports up to 2 players.</p>
     <div class="team-select-grid">
         <button class="team-choice-btn team-btn-red" onclick="joinTeam('red')">Join Red Team</button>
         <button class="team-choice-btn team-btn-green" onclick="joinTeam('green')">Join Green Team</button>
@@ -326,9 +329,9 @@ let powerupCount = 0;
 let selectedShopIndex = null;
 let freezeStateUsed = { red: false, green: false, orange: false };
 let incomingStolenCardBuffer = null;
-let swapSourceTargetColor = null; // Shift tracking variable layout from absolute UIDs to team colors
+let swapSourceTargetColor = null; 
 let isSelectingOwnCardToSwapOut = false;
-let unsubscribeFromDeckListener = null; // House memory footprint handlers to cycle real-time sub loops cleanly
+let unsubscribeFromDeckListener = null; 
 
 onAuthStateChanged(auth, user => {
   if(user){
@@ -346,14 +349,15 @@ onAuthStateChanged(auth, user => {
         if (userAssignedColor) {
             closePopup('team-popup');
             selectedColor = userAssignedColor;
-            document.getElementById("activeColor").style.backgroundColor = selectedColor;
+            document.getElementById("activeColor").style.backgroundColor = selectedColor === "orange" ? "#ffa500" : selectedColor;
             
-            // ACTIVATE COOPERATIVE TEAM HAND LISTENERS
+            // Connect unified team deck sync channel
             startTeamDeckListener(selectedColor);
         } else {
             if (unsubscribeFromDeckListener) { unsubscribeFromDeckListener(); unsubscribeFromDeckListener = null; }
             openPopup('team-popup');
         }
+        updateVisibleColorButtons();
     });
 
     onSnapshot(doc(db, "mapState", "gameRulesState"), rulesSnap => {
@@ -367,15 +371,14 @@ onAuthStateChanged(auth, user => {
     document.getElementById('openShopBtn').innerText = "Shop (0 ⚡)";
     if (unsubscribeFromDeckListener) { unsubscribeFromDeckListener(); unsubscribeFromDeckListener = null; }
     closePopup('team-popup');
+    updateVisibleColorButtons();
   }
   updateUI();
 });
 
-// Dynamic cooperative listener management block
 function startTeamDeckListener(teamColor) {
     if (unsubscribeFromDeckListener) unsubscribeFromDeckListener();
     
-    // Listen to doc(db, "teamDecks", teamColor) instead of unique user profiles!
     unsubscribeFromDeckListener = onSnapshot(doc(db, "teamDecks", teamColor), ds => {
         if(ds.exists()){
             const d = ds.data();
@@ -386,6 +389,7 @@ function startTeamDeckListener(teamColor) {
         } else {
             userHand = []; battleCard = null; completedChallenges = []; powerupCount = 0;
         }
+        document.getElementById('drawer-header').innerText = `Your Challenges | Powerups: ${powerupCount}`;
         document.getElementById('openShopBtn').innerText = `Shop (${powerupCount} ⚡)`;
         renderHand();
     });
@@ -394,7 +398,7 @@ function startTeamDeckListener(teamColor) {
 window.joinTeam = async (color) => {
     if (!currentUser) return;
     
-    if (globalTeams[color] && globalTeams[color].length >= 3) {
+    if (globalTeams[color] && globalTeams[color].length >= 2) {
         return alert(`The ${color.toUpperCase()} team is currently full! Please choose a different team.`);
     }
     
@@ -417,13 +421,13 @@ window.joinTeam = async (color) => {
     }
     
     selectedColor = color;
-    document.getElementById("activeColor").style.backgroundColor = selectedColor;
+    document.getElementById("activeColor").style.backgroundColor = selectedColor === "orange" ? "#ffa500" : selectedColor;
     closePopup('team-popup');
 };
 
 window.leaveTeam = async () => {
     if (!currentUser) return;
-    if (!confirm("Are you sure you want to leave your team? This will allow you to switch to another active color block.")) return;
+    if (!confirm("Are you sure you want to switch teams?")) return;
 
     Object.keys(globalTeams).forEach(c => {
         globalTeams[c] = globalTeams[c].filter(p => p.uid !== currentUser.uid);
@@ -436,7 +440,6 @@ window.leaveTeam = async () => {
 
 async function saveDeck() {
     if(!currentUser || !selectedColor) return;
-    // Writes directly into central corporate group file logs
     await setDoc(doc(db, "teamDecks", selectedColor), { 
         hand: userHand, 
         battleCard, 
@@ -537,7 +540,6 @@ async function initiateDeckTheftSiphon(targetColor) {
     closePopup('swap-team-popup');
     swapSourceTargetColor = targetColor;
     
-    // Fetch directly from targeted collaborative team endpoint document!
     const targetSnap = await getDoc(doc(db, "teamDecks", swapSourceTargetColor));
     if (!targetSnap.exists() || !targetSnap.data().hand || targetSnap.data().hand.length === 0) {
         return alert(`Target ${targetColor.toUpperCase()} team hand is empty. Cannot perform card siphons.`);
@@ -582,7 +584,6 @@ async function executeCardSwapTradeoff(mySlotIdx) {
     userHand[mySlotIdx] = foreignCardAcquired;
     incomingStolenCardBuffer.targetHand[incomingStolenCardBuffer.targetIndex] = localCardSacrificed;
     
-    // Update the mutual opposing team storage collection document
     await setDoc(doc(db, "teamDecks", swapSourceTargetColor), { hand: incomingStolenCardBuffer.targetHand }, { merge: true });
     await saveDeck();
     
@@ -592,6 +593,11 @@ async function executeCardSwapTradeoff(mySlotIdx) {
     renderHand();
     alert("Trade successful! The selected cards have been cleanly swapped between both active team decks.");
 }
+
+document.getElementById('loginBtn').onclick = () => {
+    const provider = new GoogleAuthProvider();
+    signInWithPopup(auth, provider).catch(error => console.error(error));
+};
 
 function renderHand() {
     const container = document.getElementById('deck-container');
@@ -704,7 +710,6 @@ window.openCompletedPopup = () => {
     completedChallenges.forEach(c => {
         const item = document.createElement('div');
         item.className = 'list-item';
-        item.style.textAlign = 'center';
         item.innerText = c.title;
         item.onclick = () => { selectedSlotIndex = null; showCardTooltip(c); };
         list.appendChild(item);
@@ -853,7 +858,34 @@ function updateUI() {
     document.getElementById("leaveTeamBtn").style.display = isAuth ? "block" : "none";
     document.getElementById("toggleModeContainer").style.display = isAuth ? "flex" : "none";
     document.getElementById("colorPicker").style.display = isAuth ? "flex" : "none";
-    document.getElementById("resetBtn").style.display = (currentUser?.email === "blatherstv::gmail.com" || currentUser?.email === "ethanby2000@gmail.com") ? "block" : "none";
+    document.getElementById("resetBtn").style.display = (currentUser?.email === "blatherstv@gmail.com" || currentUser?.email === "ethanby2000@gmail.com") ? "block" : "none";
+}
+
+function updateVisibleColorButtons() {
+    if (!currentUser) return;
+    
+    const userTeamColor = Object.keys(globalTeams).find(color => 
+        globalTeams[color].some(player => player.uid === currentUser.uid)
+    );
+    
+    const redBtn = document.getElementById('pick-red-btn');
+    const greenBtn = document.getElementById('pick-green-btn');
+    const orangeBtn = document.getElementById('pick-orange-btn');
+    
+    if (userTeamColor) {
+        redBtn.style.display = (userTeamColor === 'red') ? 'block' : 'none';
+        greenBtn.style.display = (userTeamColor === 'green') ? 'block' : 'none';
+        orangeBtn.style.display = (userTeamColor === 'orange') ? 'block' : 'none';
+        
+        if (selectedColor !== "black") {
+            selectedColor = userTeamColor;
+            document.getElementById("activeColor").style.backgroundColor = selectedColor === "orange" ? "#ffa500" : selectedColor;
+        }
+    } else {
+        redBtn.style.display = 'block';
+        greenBtn.style.display = 'block';
+        orangeBtn.style.display = 'block';
+    }
 }
 
 document.getElementById('modeToggle').onchange = (e) => {
@@ -861,7 +893,7 @@ document.getElementById('modeToggle').onchange = (e) => {
 };
 
 document.querySelectorAll("#colorPicker button[data-color]").forEach(btn => {
-    btn.onclick = () => { selectedColor = btn.dataset.color; document.getElementById("activeColor").style.backgroundColor = selectedColor === "black" ? "#444" : selectedColor; };
+    btn.onclick = () => { selectedColor = btn.dataset.color; document.getElementById("activeColor").style.backgroundColor = selectedColor === "black" ? "#444" : (selectedColor === "orange" ? "#ffa500" : selectedColor); };
 });
 
 window.logout = () => auth.signOut();
