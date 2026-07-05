@@ -104,7 +104,6 @@
     #battleBtn { background: #34495e; }
     #resetHandBtn { background: #7f8c8d; }
     #viewCompletedBtn, #viewAllBtn { background: #8e44ad; }
-    #openShopBtn { background: #dea60b; color: white; }
 
     /* --- POPUPS --- */
     .popup-overlay {
@@ -116,8 +115,7 @@
     }
     #card-tooltip { z-index: 4000 !important; }
     .scroll-list { display: flex; flex-direction: column; gap: 10px; margin: 15px 0; max-height: 40vh; overflow-y: auto; padding: 5px; }
-    .list-item { padding: 10px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; text-align: left; }
-    .list-item.selected { border-color: #3498db; background: #eaf2f8; }
+    .list-item { padding: 10px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; }
 
     .special-tagP { background: #dea60b; color: white; font-size: 10px; padding: 4px 10px; border-radius: 12px; margin: 5px 2px; font-weight: bold; display: inline-block; }
     .special-tag2 { background: #000; color: white; font-size: 10px; padding: 4px 10px; border-radius: 12px; margin: 5px 2px; font-weight: bold; display: inline-block; }
@@ -127,7 +125,6 @@
     #tt-discardBtn { background: #e74c3c; flex: 1; }
     #tt-completeBtn { background: #27ae60; flex: 1; }
     #tt-conditionalCompleteBtn { background: #16a085; flex: 1; display: none; }
-    #redeemShopBtn { background: #27ae60; width: 100%; margin-top: 10px; font-size: 15px; }
 
     #addChallengeBtn { background: #247ad1; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; margin-bottom: 10px; display:none; }
     
@@ -151,7 +148,10 @@
                  cursor: pointer;display: flex;align-items: center;justify-content: center;padding: 10px;transition: background 0.2s; border-radius: 6px; background: white;
     }
     
-    #signOutBtn:hover, #leaveTeamBtn:hover { background: #f0f0f0; }
+    #signOutBtn:hover, #leaveTeamBtn:hover {
+      background: #f0f0f0;
+    }
+    
     #signOutBtn svg { pointer-events: none; width: 24px; height: 24px; color: #c0392b; }
     #leaveTeamBtn svg { pointer-events: none; width: 24px; height: 24px; color: #000000; }
   </style>
@@ -172,10 +172,7 @@
     <span id="modeStatusText">On</span>
   </div>
   <div id="colorPicker" style="display:none;">
-    <button data-color="red" id="pick-red-btn">Red</button>
-    <button data-color="green" id="pick-green-btn">Green</button>
-    <button data-color="orange" id="pick-orange-btn">Orange</button>
-    <button data-color="black">Lock</button>
+    <button data-color="red">Red</button><button data-color="green">Green</button><button data-color="orange">Orange</button><button data-color="black">Lock</button>
     <div id="activeColor"></div>
   </div>
   <button id="resetBtn" style="display:none;">Reset Map</button>
@@ -185,18 +182,17 @@
 
 <div id="card-drawer">
     <div id="drawer-tab" onclick="toggleDrawer()">DECK</div>
-    <h4 id="drawer-header" style="margin:0 0 5px 0; color: #34495e; font-size: 14px;">Your Challenges</h4>
+    <h4 id="drawer-header" style="margin:0 0 5px 0; color: #34495e; font-size: 14px;">Your Challenges | Powerups: 0</h4>
     <div id="deck-container"></div>
     <div id="drawer-controls">
         <div class="btn-row">
             <button id="drawBtn">Draw Challenge</button>
             <button id="battleBtn">Battle Challenge</button>
-            <button id="openShopBtn" onclick="openShopPopup()">Shop (0 ⚡)</button>
+            <button id="resetHandBtn">Reset Hand</button>
         </div>
         <div class="btn-row">
             <button id="viewCompletedBtn" onclick="openCompletedPopup()">Completed Challenges</button>
             <button id="viewAllBtn" onclick="openViewAllPopup()">View All Challenges</button>
-            <button id="resetHandBtn">Reset Hand</button>
         </div>
     </div>
 </div>
@@ -233,19 +229,6 @@
     <button class="action-btn close-btn" onclick="closePopup('view-all-popup')">Close</button>
 </div>
 
-<div id="shop-popup" class="popup-overlay">
-    <h3 id="shop-title">Powerup Store (0 ⚡)</h3>
-    <p style="font-size: 12px; color:#666; margin-bottom: 12px;">Select an asset capability and press Redeem to expend 1 point:</p>
-    <div id="shop-options-list" class="scroll-list">
-        <div class="list-item" onclick="selectShopOption(0)" id="shop-opt-0"><strong>Discard Hand:</strong> Wipe your current deck hand vector to draw 3 raw replacements.</div>
-        <div class="list-item" onclick="selectShopOption(1)" id="shop-opt-1"><strong>Swap Card:</strong> Inspect an opposing team hand and siphon one card away.</div>
-        <div class="list-item" onclick="selectShopOption(2)" id="shop-opt-2"><strong>Unrestricted Battle:</strong> Initiate conflict without ruling 1/3 adjacent locations.</div>
-        <div class="list-item" onclick="selectShopOption(3)" id="shop-opt-3"><strong>Freeze Counter:</strong> Lock opposing team movement mechanics for 5 minutes.</div>
-    </div>
-    <button id="redeemShopBtn" class="action-btn" onclick="redeemSelectedPower()">Redeem Capability</button>
-    <button class="action-btn close-btn" style="margin-top: 6px;" onclick="closePopup('shop-popup')">Close</button>
-</div>
-
 <div id="team-popup" class="popup-overlay" style="z-index: 3500;">
     <h3>Select Your Team</h3>
     <p style="font-size: 13px; color: #555;">Each team color supports up to 2 players.</p>
@@ -256,32 +239,28 @@
     </div>
 </div>
 
-<div id="swap-team-popup" class="popup-overlay" style="z-index: 3600;">
-    <h3>Swap: Pick Opponent Team</h3>
-    <div class="team-select-grid" id="swap-team-buttons-container"></div>
-    <button class="action-btn close-btn" style="margin-top:10px;" onclick="closePopup('swap-team-popup')">Cancel</button>
-</div>
-
-<div id="swap-card-popup" class="popup-overlay" style="z-index: 3700;">
-    <h3 id="swap-card-title">Choose Opponent's Card</h3>
-    <div id="swap-opponent-cards-list" class="scroll-list"></div>
-    <button class="action-btn close-btn" onclick="closePopup('swap-card-popup')">Cancel</button>
-</div>
-
 <div id="rules-popup" class="popup-overlay">
     <h3>Basic Rules & Information </h3>
     <ul style="font-size: 14px; text-align: left; padding-left: 10px;">
         <li><strong>Begin playing:</strong> Open the deck tab and draw 3 challenges to your hand.</li>
         <li><strong>Claiming:</strong> Tap a neighborhood with your color upon completing a challenge, tap again to remove claim if you made a mistake.</li>
         <li><strong>Battle Challenge:</strong> Battle an opposing neighborhood if you own 1/3 of the surrounding neighborhoods, draw battle challenge card if you are initiating. Use the lock button to lock ownership for winner of challenge</li>
-        <li><strong>Powerups:</strong> If you complete a challenge with a powerup, open the Shop window to redeem it.</li>
+        <li><strong>Powerups:</strong> If you complete a challenge with a powerup, choose one of the following:
+        <ul>
+          <li>Discard your entire hand, draw new cards</li>
+          <li>Swap one challenge with an opponent (their deck will be revealed, you choose the card)</li>
+          <li>Start a battle without controlling 1/3 of adjacent neighborhoods</li>
+          <li>Freeze opposing teams for 5 minutes outside of battle [ONLY ONE USE PER TEAM PER GAME]</li>
+        </ul></li>
         <li><strong>Remember:</strong> Draw 1 new challenge after each one you complete. You cannot discard challenges aside from earning a powerup or pulling a duplicate</li>
         <li><strong>Full Rules:</strong> Consult <a href="https://docs.google.com/document/d/12UeE2URIqaDAgssEYz7DkNpZFbi_vXyOhMMXMsztil4">rules document</a> for full detailed explanations</li>
         <li><strong>Note:</strong> You must be signed into a Google account in order to play and save your progress.</li>
+
     </ul>
     <button class="action-btn close-btn" onclick="closePopup('rules-popup')">Close</button>
 </div>
 
+<!-- Leave Team Button situated directly above Logout -->
 <button id="leaveTeamBtn" style="display:none;" onclick="leaveTeam()" title="Leave Current Team">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M10 22H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h5"></path>
@@ -302,7 +281,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -326,13 +305,6 @@ let globalTeams = { red: [], green: [], orange: [] };
 let currentViewAllTab = 'regular'; 
 let powerupCount = 0;
 
-let selectedShopIndex = null;
-let freezeStateUsed = { red: false, green: false, orange: false };
-let incomingStolenCardBuffer = null;
-let swapSourceTargetColor = null; 
-let isSelectingOwnCardToSwapOut = false;
-let unsubscribeFromDeckListener = null; 
-
 onAuthStateChanged(auth, user => {
   if(user){
     currentUser = user;
@@ -349,37 +321,13 @@ onAuthStateChanged(auth, user => {
         if (userAssignedColor) {
             closePopup('team-popup');
             selectedColor = userAssignedColor;
-            document.getElementById("activeColor").style.backgroundColor = selectedColor === "orange" ? "#ffa500" : selectedColor;
-            
-            // Connect unified team deck sync channel
-            startTeamDeckListener(selectedColor);
+            document.getElementById("activeColor").style.backgroundColor = selectedColor;
         } else {
-            if (unsubscribeFromDeckListener) { unsubscribeFromDeckListener(); unsubscribeFromDeckListener = null; }
             openPopup('team-popup');
         }
-        updateVisibleColorButtons();
     });
 
-    onSnapshot(doc(db, "mapState", "gameRulesState"), rulesSnap => {
-        if(rulesSnap.exists()){
-            freezeStateUsed = rulesSnap.data().freezeStateUsed || { red: false, green: false, orange: false };
-        }
-    });
-
-  } else {
-    currentUser = null; userHand = []; battleCard = null; completedChallenges = []; powerupCount = 0; renderHand();
-    document.getElementById('openShopBtn').innerText = "Shop (0 ⚡)";
-    if (unsubscribeFromDeckListener) { unsubscribeFromDeckListener(); unsubscribeFromDeckListener = null; }
-    closePopup('team-popup');
-    updateVisibleColorButtons();
-  }
-  updateUI();
-});
-
-function startTeamDeckListener(teamColor) {
-    if (unsubscribeFromDeckListener) unsubscribeFromDeckListener();
-    
-    unsubscribeFromDeckListener = onSnapshot(doc(db, "teamDecks", teamColor), ds => {
+    onSnapshot(doc(db, "userDecks", user.uid), ds => {
         if(ds.exists()){
             const d = ds.data();
             userHand = d.hand || [];
@@ -389,11 +337,16 @@ function startTeamDeckListener(teamColor) {
         } else {
             userHand = []; battleCard = null; completedChallenges = []; powerupCount = 0;
         }
-        document.getElementById('drawer-header').innerText = `Your Challenges | Powerups: ${powerupCount}`;
-        document.getElementById('openShopBtn').innerText = `Shop (${powerupCount} ⚡)`;
+        document.getElementById('drawer-header').innerText = `Your Challenges | Powers: ${powerupCount}`;
         renderHand();
     });
-}
+  } else {
+    currentUser = null; userHand = []; battleCard = null; completedChallenges = []; powerupCount = 0; renderHand();
+    document.getElementById('drawer-header').innerText = "Your Challenges | Powers: 0";
+    closePopup('team-popup');
+  }
+  updateUI();
+});
 
 window.joinTeam = async (color) => {
     if (!currentUser) return;
@@ -421,10 +374,11 @@ window.joinTeam = async (color) => {
     }
     
     selectedColor = color;
-    document.getElementById("activeColor").style.backgroundColor = selectedColor === "orange" ? "#ffa500" : selectedColor;
+    document.getElementById("activeColor").style.backgroundColor = selectedColor;
     closePopup('team-popup');
 };
 
+// Leave Team Core Logic Mutation Loop
 window.leaveTeam = async () => {
     if (!currentUser) return;
     if (!confirm("Are you sure you want to switch teams?")) return;
@@ -433,14 +387,13 @@ window.leaveTeam = async () => {
         globalTeams[c] = globalTeams[c].filter(p => p.uid !== currentUser.uid);
     });
 
-    if (unsubscribeFromDeckListener) { unsubscribeFromDeckListener(); unsubscribeFromDeckListener = null; }
     await setDoc(doc(db, "mapState", "teamsRoster"), globalTeams);
     alert("You have left the team. Please choose a new team.");
 };
 
 async function saveDeck() {
-    if(!currentUser || !selectedColor) return;
-    await setDoc(doc(db, "teamDecks", selectedColor), { 
+    if(!currentUser) return;
+    await setDoc(doc(db, "userDecks", currentUser.uid), { 
         hand: userHand, 
         battleCard, 
         completed: completedChallenges,
@@ -451,148 +404,6 @@ async function saveDeck() {
 window.openPopup = (id) => document.getElementById(id).style.display = 'block';
 window.closePopup = (id) => document.getElementById(id).style.display = 'none';
 window.toggleDrawer = () => document.getElementById('card-drawer').classList.toggle('open');
-
-window.openShopPopup = () => {
-    if(!currentUser) return alert("Please sign in first.");
-    selectedShopIndex = null;
-    document.querySelectorAll('#shop-options-list .list-item').forEach(el => el.classList.remove('selected'));
-    document.getElementById('shop-title').innerText = `Powerup Store (${powerupCount} ⚡)`;
-    
-    const freezeItem = document.getElementById('shop-opt-3');
-    if (freezeStateUsed[selectedColor]) {
-        freezeItem.style.opacity = '0.4';
-        freezeItem.style.textDecoration = 'line-through';
-    } else {
-        freezeItem.style.opacity = '1.0';
-        freezeItem.style.textDecoration = 'none';
-    }
-    
-    openPopup('shop-popup');
-};
-
-window.selectShopOption = (idx) => {
-    if (idx === 3 && freezeStateUsed[selectedColor]) {
-        return alert("Your team has already expended its single Freeze usage resource this game!");
-    }
-    selectedShopIndex = idx;
-    document.querySelectorAll('#shop-options-list .list-item').forEach(el => el.classList.remove('selected'));
-    document.getElementById(`shop-opt-${idx}`).classList.add('selected');
-};
-
-window.redeemSelectedPower = async () => {
-    if (selectedShopIndex === null) return alert("Please pick an option to redeem.");
-    if (powerupCount < 1) return alert("Insufficient powers! Complete standard star tasks to collect power credits.");
-    
-    if (selectedShopIndex === 0) {
-        powerupCount -= 1;
-        userHand = [];
-        await saveDeck();
-        closePopup('shop-popup');
-        alert("Your team deck has been dissolved. Please manually trigger 'Draw Challenge' to pick 3 raw cards.");
-    } 
-    else if (selectedShopIndex === 1) {
-        closePopup('shop-popup');
-        openSwapTeamSelectionModal();
-    } 
-    else if (selectedShopIndex === 2) {
-        if (battleCard) return alert("Battle slot occupied already!");
-        powerupCount -= 1;
-        battleCard = battleChallenges[Math.floor(Math.random() * battleChallenges.length)];
-        await saveDeck();
-        closePopup('shop-popup');
-        showCardTooltip(battleCard);
-    } 
-    else if (selectedShopIndex === 3) {
-        powerupCount -= 1;
-        freezeStateUsed[selectedColor] = true;
-        
-        await setDoc(doc(db, "mapState", "gameRulesState"), { freezeStateUsed });
-        await saveDeck();
-        closePopup('shop-popup');
-        
-        alert("YOU HAVE REDEEMED FREEZE! NOTIFY THE OTHER TEAMS AT THIS TIME.");
-    }
-};
-
-function openSwapTeamSelectionModal() {
-    const container = document.getElementById('swap-team-buttons-container');
-    container.innerHTML = '';
-    
-    let optionsRendered = 0;
-    Object.keys(globalTeams).forEach(color => {
-        if (color !== selectedColor && globalTeams[color].length > 0) {
-            optionsRendered++;
-            const btn = document.createElement('button');
-            btn.className = `team-choice-btn team-btn-${color}`;
-            btn.innerText = `Target ${color.toUpperCase()} Team`;
-            btn.onclick = () => initiateDeckTheftSiphon(color);
-            container.appendChild(btn);
-        }
-    });
-    
-    if (optionsRendered === 0) {
-        return alert("No opponent players found active inside remote team registers to target.");
-    }
-    openPopup('swap-team-popup');
-}
-
-async function initiateDeckTheftSiphon(targetColor) {
-    closePopup('swap-team-popup');
-    swapSourceTargetColor = targetColor;
-    
-    const targetSnap = await getDoc(doc(db, "teamDecks", swapSourceTargetColor));
-    if (!targetSnap.exists() || !targetSnap.data().hand || targetSnap.data().hand.length === 0) {
-        return alert(`Target ${targetColor.toUpperCase()} team hand is empty. Cannot perform card siphons.`);
-    }
-    
-    const opponentHand = targetSnap.data().hand;
-    const listContainer = document.getElementById('swap-opponent-cards-list');
-    listContainer.innerHTML = '';
-    
-    opponentHand.forEach((card, index) => {
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        item.innerHTML = `<strong>${card.title}</strong><br><span style="font-size:11px;color:#666;">${card.description || 'No rules'}</span>`;
-        item.onclick = () => selectOpponentStolenCard(card, index, opponentHand);
-        listContainer.appendChild(item);
-    });
-    
-    document.getElementById('swap-card-title').innerText = `Target: ${targetColor.toUpperCase()} Hand`;
-    openPopup('swap-card-popup');
-}
-
-function selectOpponentStolenCard(card, cardIdx, completeOpponentHandArray) {
-    closePopup('swap-card-popup');
-    incomingStolenCardBuffer = { card: card, targetIndex: cardIdx, targetHand: completeOpponentHandArray };
-    
-    isSelectingOwnCardToSwapOut = true;
-    toggleDrawer(); 
-    alert("Opponent card secured! Now tap ONE card inside your team challenge slots to trade out.");
-}
-
-async function executeCardSwapTradeoff(mySlotIdx) {
-    if (!userHand[mySlotIdx]) {
-        return alert("You must choose an actual card slot location to trade into!");
-    }
-    
-    isSelectingOwnCardToSwapOut = false;
-    powerupCount -= 1; 
-    
-    const localCardSacrificed = userHand[mySlotIdx];
-    const foreignCardAcquired = incomingStolenCardBuffer.card;
-    
-    userHand[mySlotIdx] = foreignCardAcquired;
-    incomingStolenCardBuffer.targetHand[incomingStolenCardBuffer.targetIndex] = localCardSacrificed;
-    
-    await setDoc(doc(db, "teamDecks", swapSourceTargetColor), { hand: incomingStolenCardBuffer.targetHand }, { merge: true });
-    await saveDeck();
-    
-    incomingStolenCardBuffer = null;
-    swapSourceTargetColor = null;
-    
-    renderHand();
-    alert("Trade successful! The selected cards have been cleanly swapped between both active team decks.");
-}
 
 document.getElementById('loginBtn').onclick = () => {
     const provider = new GoogleAuthProvider();
@@ -606,26 +417,13 @@ function renderHand() {
         const slot = document.createElement('div');
         slot.className = 'card-slot' + (userHand[i] ? ' occupied' : '') + (selectedSlotIndex === i ? ' selected' : '');
         slot.innerHTML = userHand[i] ? `<div class="card-title">${userHand[i].title}</div>` : '<span style="color:#ccc; font-size:9px;">EMPTY</span>';
-        slot.onclick = () => { 
-            if (isSelectingOwnCardToSwapOut) {
-                executeCardSwapTradeoff(i);
-            } else {
-                selectedSlotIndex = i; 
-                renderHand(); 
-                if(userHand[i]) showCardTooltip(userHand[i]); 
-            }
-        };
+        slot.onclick = () => { selectedSlotIndex = i; renderHand(); if(userHand[i]) showCardTooltip(userHand[i]); };
         container.appendChild(slot);
     }
     const bSlot = document.createElement('div');
     bSlot.className = 'card-slot battle-slot' + (battleCard ? ' occupied' : '') + (selectedSlotIndex === 3 ? ' selected' : '');
     bSlot.innerHTML = battleCard ? `<div class="card-title">${battleCard.title}</div>` : '<span style="color:#000; font-size:9px; font-weight:bold;">BATTLE CHALLENGE</span>';
-    bSlot.onclick = () => { 
-        if (isSelectingOwnCardToSwapOut) return alert("You cannot swap into your active battle challenge slot!");
-        selectedSlotIndex = 3; 
-        renderHand(); 
-        if(battleCard) showCardTooltip(battleCard); 
-    };
+    bSlot.onclick = () => { selectedSlotIndex = 3; renderHand(); if(battleCard) showCardTooltip(battleCard); };
     container.appendChild(bSlot);
 }
 
@@ -690,16 +488,12 @@ document.getElementById('battleBtn').onclick = () => {
     saveDeck(); showCardTooltip(battleCard);
 };
 
-document.getElementById('resetHandBtn').onclick = async () => {
-    if(confirm("Are you sure you want to reset? This will remove all cards in your hand, powerups, team freeze usage history, and completed challenges for the WHOLE team.")) {
+document.getElementById('resetHandBtn').onclick = () => {
+    if(confirm("Are you sure you want to reset? This will remove all cards in your hand, powerups, and completed challenges.")) {
         userHand = [];
         completedChallenges = [];
         battleCard = null;
         powerupCount = 0;
-        
-        freezeStateUsed[selectedColor] = false;
-        await setDoc(doc(db, "mapState", "gameRulesState"), { freezeStateUsed });
-        
         saveDeck();
     }
 };
@@ -858,34 +652,7 @@ function updateUI() {
     document.getElementById("leaveTeamBtn").style.display = isAuth ? "block" : "none";
     document.getElementById("toggleModeContainer").style.display = isAuth ? "flex" : "none";
     document.getElementById("colorPicker").style.display = isAuth ? "flex" : "none";
-    document.getElementById("resetBtn").style.display = (currentUser?.email === "blatherstv@gmail.com" || currentUser?.email === "ethanby2000@gmail.com") ? "block" : "none";
-}
-
-function updateVisibleColorButtons() {
-    if (!currentUser) return;
-    
-    const userTeamColor = Object.keys(globalTeams).find(color => 
-        globalTeams[color].some(player => player.uid === currentUser.uid)
-    );
-    
-    const redBtn = document.getElementById('pick-red-btn');
-    const greenBtn = document.getElementById('pick-green-btn');
-    const orangeBtn = document.getElementById('pick-orange-btn');
-    
-    if (userTeamColor) {
-        redBtn.style.display = (userTeamColor === 'red') ? 'block' : 'none';
-        greenBtn.style.display = (userTeamColor === 'green') ? 'block' : 'none';
-        orangeBtn.style.display = (userTeamColor === 'orange') ? 'block' : 'none';
-        
-        if (selectedColor !== "black") {
-            selectedColor = userTeamColor;
-            document.getElementById("activeColor").style.backgroundColor = selectedColor === "orange" ? "#ffa500" : selectedColor;
-        }
-    } else {
-        redBtn.style.display = 'block';
-        greenBtn.style.display = 'block';
-        orangeBtn.style.display = 'block';
-    }
+    document.getElementById("resetBtn").style.display = (currentUser?.email === "blatherstv@gmail.com") ? "block" : "none";
 }
 
 document.getElementById('modeToggle').onchange = (e) => {
@@ -893,7 +660,7 @@ document.getElementById('modeToggle').onchange = (e) => {
 };
 
 document.querySelectorAll("#colorPicker button[data-color]").forEach(btn => {
-    btn.onclick = () => { selectedColor = btn.dataset.color; document.getElementById("activeColor").style.backgroundColor = selectedColor === "black" ? "#444" : (selectedColor === "orange" ? "#ffa500" : selectedColor); };
+    btn.onclick = () => { selectedColor = btn.dataset.color; document.getElementById("activeColor").style.backgroundColor = selectedColor === "black" ? "#444" : selectedColor; };
 });
 
 window.logout = () => auth.signOut();
