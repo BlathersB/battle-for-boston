@@ -1,7 +1,7 @@
 [
   { "title": "Catch 3 bugs ⭐", "description": "You must have all 3 bugs at the same time. The bugs do not have to be local in origin but you must have caught them in the neighborhood.", "stars": 1, "twoTerritories": false },
   { "title": "Solve a newspaper puzzle ⭐", "description": "Buy a physical newspaper and correctly solve a puzzle inside it. The paper must be bought inside the neighborhood in which you solve it.", "stars": 1, "twoTerritories": false },
-  { "title": "Find and recreate a statue ⭐", "description": "Locate a statue without using the internet. One team member must hold the pose for at least 5 minutes.", "stars": 1, "twoTerritories": false },
+  { "title": "No Scotland, No Party", "description": "Photograph a standard orange-and-white traffic cone and a statue.  They do not need to be in the same photograph, but if they are, earn a ⭐.", "stars": 1, "twoTerritories": false },
   { "title": "Find chowder advertised", "description": "Find an advertisement for chowder that’s visible from outdoors. The advertisement must say the word “chowder” and/or have a picture that’s clearly chowder.", "stars": 0, "twoTerritories": false },
   { "title": "Attend a local event ⭐", "description": "This means a gathering of multiple people at an event that is open to the public. Timed public installations count.", "stars": 1, "twoTerritories": false },
   { "title": "Capture a politician on camera ⭐⭐", "description": "They may be elected or appointed. The picture must be clear enough that, given it and the politician’s official picture, a reasonable third party would agree they are the same person.", "stars": 2, "twoTerritories": false },
@@ -64,5 +64,11 @@
   { "title": "Slip in a slip lane", "description": "A slip lane is a one-way road section that allows vehicles to turn onto a cross street without stopping for a red light or entering the main intersection.  You do not need to actually slip; an exaggerated fake fall will suffice.  If you get hit by a car, you may not advance the gamestate until seeking medical attention if deemed necessary.", "stars": 0, "twoTerritories": false },
   { "title": "Find a defaced sign", "description": "The defacement (sticker or graffiti) must be on the front of the sign.", "stars": 0, "twoTerritories": false },
   { "title": "Library speedrun ⭐", "description": "Enter a library or bookstore, and within 5 minutes of entering, find the words “Battle”, “4”/”four”, and “Boston” printed in books.  If you run out of time, you may re-attempt, but may not do so in the same library or bookstore.", "stars": 1, "twoTerritories": false },
-  { "title": "Moving Day", "description": "Find any object that has clearly been left abandoned on the sidewalk in the hopes that someone takes it.", "stars": 0, "twoTerritories": false }
+  { "title": "Moving Day", "description": "Find any object that has clearly been left abandoned on the sidewalk in the hopes that someone takes it.", "stars": 0, "twoTerritories": false },
+  { "title": "Get legally drunk ⭐", "description": "One team member must reach the “Legally Impaired” / Yellow level according to this chart (https://www.utoledo.edu/studentaffairs/counseling/selfhelp/substanceuse/bac.html).", "stars": 1, "twoTerritories": false },
+  { "title": "Go Shopping", "description": "Buy something that will be genuinely useful to you post-game.", "stars": 0, "twoTerritories": false },
+  { "title": "World Cup Nostalgia", "description": "Find a jersey from, or a physical (non-digital) explicit reference to, a team that has been eliminated from the 2026 World Cup.  (A country flag from outside the Americas counts.)", "stars": 0, "twoTerritories": false },
+  { "title": "Get Carded", "description": "Cause someone (not on your team) to ask to see your ID.  You may not indicate to them in any way that they are meant to do this.", "stars": 0, "twoTerritories": false },
+  { "title": "Transit Desert", "description": "Take a transit route that will not come again for at least 60 minutes.", "stars": 0, "twoTerritories": false },
+  { "title": "Late To The Party ⭐", "description": "Find a non-detonated firework.", "stars": 1, "twoTerritories": false }
 ]
