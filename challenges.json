@@ -1,7 +1,7 @@
 [
   { "title": "Catch 3 bugs ⭐", "description": "You must have all 3 bugs at the same time. The bugs do not have to be local in origin but you must have caught them in the neighborhood.", "stars": 1, "twoTerritories": false },
   { "title": "Solve a newspaper puzzle ⭐", "description": "Buy a physical newspaper and correctly solve a puzzle inside it. The paper must be bought inside the neighborhood in which you solve it.", "stars": 1, "twoTerritories": false },
-  { "title": "No Scotland, No Party", "description": "Photograph a standard orange-and-white traffic cone and a statue.  They do not need to be in the same photograph, but if they are, earn a ⭐.", "stars": 1, "twoTerritories": false },
+  { "title": "No Scotland, No Party", "description": "Photograph a standard orange-and-white traffic cone and a statue.  They do not need to be in the same photograph, but if they are, earn a ⭐.", "stars": 0, "twoTerritories": false },
   { "title": "Find chowder advertised", "description": "Find an advertisement for chowder that’s visible from outdoors. The advertisement must say the word “chowder” and/or have a picture that’s clearly chowder.", "stars": 0, "twoTerritories": false },
   { "title": "Attend a local event ⭐", "description": "This means a gathering of multiple people at an event that is open to the public. Timed public installations count.", "stars": 1, "twoTerritories": false },
   { "title": "Capture a politician on camera ⭐⭐", "description": "They may be elected or appointed. The picture must be clear enough that, given it and the politician’s official picture, a reasonable third party would agree they are the same person.", "stars": 2, "twoTerritories": false },
