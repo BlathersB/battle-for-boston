@@ -97,7 +97,7 @@
 
     /* --- BUTTON LAYOUT --- */
     #drawer-controls { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-    .btn-row { display: flex; gap: 6px; }
+    .btn-row { display: flex; gap: 6px; margin-bottom: 4px; }
     #drawer-controls button { flex: 1; padding: 12px 5px; border: none; border-radius: 8px; font-weight: bold; color: white; font-size: 10px; cursor: pointer; }
     
     #drawBtn { background: #247ad1; }
@@ -124,6 +124,7 @@
     .close-btn { background: #2c3e50; width: 100%; margin-bottom: 8px; }
     #tt-discardBtn { background: #e74c3c; flex: 1; }
     #tt-completeBtn { background: #27ae60; flex: 1; }
+    #tt-conditionalCompleteBtn { background: #16a085; flex: 1; display: none; }
 
     #addChallengeBtn { background: #247ad1; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; margin-bottom: 10px; display:none; }
     
@@ -181,7 +182,7 @@
 
 <div id="card-drawer">
     <div id="drawer-tab" onclick="toggleDrawer()">DECK</div>
-    <h4 style="margin:0 0 5px 0; color: #34495e; font-size: 14px;">Your Challenges</h4>
+    <h4 id="drawer-header" style="margin:0 0 5px 0; color: #34495e; font-size: 14px;">Your Challenges | Powers: 0</h4>
     <div id="deck-container"></div>
     <div id="drawer-controls">
         <div class="btn-row">
@@ -205,6 +206,7 @@
         <div id="tt-action-row" class="btn-row">
             <button id="tt-discardBtn" class="action-btn">Discard</button>
             <button id="tt-completeBtn" class="action-btn">Complete</button>
+            <button id="tt-conditionalCompleteBtn" class="action-btn">Complete with ⭐</button>
         </div>
     </div>
 </div>
@@ -215,7 +217,6 @@
     <button class="action-btn close-btn" onclick="closePopup('completed-popup')">Close</button>
 </div>
 
-<!-- Updated View All Modal with Tab Navigation -->
 <div id="view-all-popup" class="popup-overlay">
     <h3>All Challenges</h3>
     <div class="modal-tabs">
@@ -228,7 +229,6 @@
     <button class="action-btn close-btn" onclick="closePopup('view-all-popup')">Close</button>
 </div>
 
-<!-- Team Selection Onboarding Modal -->
 <div id="team-popup" class="popup-overlay" style="z-index: 3500;">
     <h3>Select Your Team</h3>
     <p style="font-size: 13px; color: #555;">Each team color supports up to 2 active players. Please choose yours:</p>
@@ -292,21 +292,20 @@ let currentUser = null, selectedColor = "red", selected = {}, geojsonLayer = nul
 let challenges = [], battleChallenges = [], userHand = [], completedChallenges = [], battleCard = null, selectedSlotIndex = null;
 let tempSelectedAllIndex = null;
 
-// Global real-time roster configuration logic
+// Persistent Global Counters
 let globalTeams = { red: [], green: [], orange: [] };
 let currentViewAllTab = 'regular'; 
+let powerupCount = 0;
 
 onAuthStateChanged(auth, user => {
   if(user){
     currentUser = user;
     
-    // 1. Monitor central roster map context
     onSnapshot(doc(db, "mapState", "teamsRoster"), rosterSnap => {
         if(rosterSnap.exists()) {
             globalTeams = rosterSnap.data();
         }
         
-        // Audit user membership placement
         const userAssignedColor = Object.keys(globalTeams).find(color => 
             globalTeams[color].some(player => player.uid === user.uid)
         );
@@ -320,38 +319,38 @@ onAuthStateChanged(auth, user => {
         }
     });
 
-    // 2. Monitor dynamic card management systems
     onSnapshot(doc(db, "userDecks", user.uid), ds => {
         if(ds.exists()){
             const d = ds.data();
             userHand = d.hand || [];
             battleCard = d.battleCard || null;
             completedChallenges = d.completed || [];
+            powerupCount = d.powerups || 0;
+        } else {
+            userHand = []; battleCard = null; completedChallenges = []; powerupCount = 0;
         }
+        document.getElementById('drawer-header').innerText = `Your Challenges | Powers: ${powerupCount}`;
         renderHand();
     });
   } else {
-    currentUser = null; userHand = []; battleCard = null; completedChallenges = []; renderHand();
+    currentUser = null; userHand = []; battleCard = null; completedChallenges = []; powerupCount = 0; renderHand();
+    document.getElementById('drawer-header').innerText = "Your Challenges | Powers: 0";
     closePopup('team-popup');
   }
   updateUI();
 });
 
-// Explicit Team Assignment Mechanism
 window.joinTeam = async (color) => {
     if (!currentUser) return;
     
-    // Check if team limits are respected
     if (globalTeams[color] && globalTeams[color].length >= 2) {
         return alert(`The ${color.toUpperCase()} team is currently full! Please choose a different alignment.`);
     }
     
-    // Purge historical alignment allocations
     Object.keys(globalTeams).forEach(c => {
         globalTeams[c] = globalTeams[c].filter(p => p.uid !== currentUser.uid);
     });
     
-    // Push modern reference profile mapping logs
     globalTeams[color].push({
         uid: currentUser.uid,
         name: currentUser.displayName || "Anonymous Player"
@@ -373,14 +372,18 @@ window.joinTeam = async (color) => {
 
 async function saveDeck() {
     if(!currentUser) return;
-    await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand, battleCard, completed: completedChallenges });
+    await setDoc(doc(db, "userDecks", currentUser.uid), { 
+        hand: userHand, 
+        battleCard, 
+        completed: completedChallenges,
+        powerups: powerupCount 
+    });
 }
 
 window.openPopup = (id) => document.getElementById(id).style.display = 'block';
 window.closePopup = (id) => document.getElementById(id).style.display = 'none';
 window.toggleDrawer = () => document.getElementById('card-drawer').classList.toggle('open');
 
-// --- LOGIN LOGIC ---
 document.getElementById('loginBtn').onclick = () => {
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider).catch(error => console.error(error));
@@ -412,6 +415,12 @@ function showCardTooltip(card) {
     const isCompleted = completedChallenges.includes(card) && selectedSlotIndex === null;
     document.getElementById('tt-action-row').style.display = isCompleted ? 'none' : 'flex';
     
+    // Check conditional logic text matching properties
+    const textToAnalyze = ((card.title || '') + ' ' + (card.description || '')).toLowerCase();
+    const isConditional = (card.stars === 0) && (textToAnalyze.includes('⭐') || textToAnalyze.includes('earn a star') || textToAnalyze.includes('get a star'));
+    
+    document.getElementById('tt-conditionalCompleteBtn').style.display = (isConditional && !isCompleted) ? 'block' : 'none';
+    
     openPopup('card-tooltip');
 }
 
@@ -425,6 +434,26 @@ document.getElementById('tt-completeBtn').onclick = () => {
     if (selectedSlotIndex === null) return;
     const card = (selectedSlotIndex === 3) ? battleCard : userHand[selectedSlotIndex];
     if(!card) return;
+    
+    // Automatic collection checks
+    if(card.stars && card.stars > 0) {
+        powerupCount += card.stars;
+    }
+    
+    completedChallenges.push(card);
+    if (selectedSlotIndex === 3) battleCard = null; else userHand.splice(selectedSlotIndex, 1);
+    selectedSlotIndex = null; closePopup('card-tooltip'); saveDeck();
+};
+
+// Handlers for the conditional 3rd button click execution loops
+document.getElementById('tt-conditionalCompleteBtn').onclick = () => {
+    if (selectedSlotIndex === null) return;
+    const card = (selectedSlotIndex === 3) ? battleCard : userHand[selectedSlotIndex];
+    if(!card) return;
+    
+    // Force clean conditional update logs
+    powerupCount += 1;
+    
     completedChallenges.push(card);
     if (selectedSlotIndex === 3) battleCard = null; else userHand.splice(selectedSlotIndex, 1);
     selectedSlotIndex = null; closePopup('card-tooltip'); saveDeck();
@@ -443,10 +472,11 @@ document.getElementById('battleBtn').onclick = () => {
 };
 
 document.getElementById('resetHandBtn').onclick = () => {
-    if(confirm("Are you sure you want to reset? This will remove all cards in your hand and all completed challenges.")) {
+    if(confirm("Are you sure you want to reset? This will remove all cards in your hand, powerups, and completed challenges.")) {
         userHand = [];
         completedChallenges = [];
         battleCard = null;
+        powerupCount = 0;
         saveDeck();
     }
 };
@@ -469,7 +499,6 @@ window.openViewAllPopup = () => {
     openPopup('view-all-popup');
 };
 
-// Double-Tab Layout Core Navigation Strategy
 window.switchViewAllTab = (tab) => {
     currentViewAllTab = tab;
     document.getElementById('viewAllTabRegular').classList.toggle('active', tab === 'regular');
@@ -495,8 +524,6 @@ window.switchViewAllTab = (tab) => {
             document.querySelectorAll('#all-challenges-list .list-item').forEach(el => el.classList.remove('selected'));
             item.classList.add('selected');
             detail.innerHTML = `<strong>${c.title}</strong><br>${c.description || 'No rules.'}`;
-            
-            // Suppress the interaction option if view-state parameters identify it as a battle entity
             addBtn.style.display = (tab === 'regular') ? 'block' : 'none';
         };
         list.appendChild(item);
@@ -527,8 +554,6 @@ fetch('Boston Subdivisions.json').then(res => res.json()).then(data => {
                 l.setStyle({ color: "#00fffb", weight: 4 });
                 const d = selected[f._id];
                 const img = d?.photo ? `<img src="${d.photo}" style="width:18px;height:18px;border-radius:50%;vertical-align:middle;margin-right:6px;">` : '';
-                
-                // Format tooltip tracking data to display formal team assignments instead of primitive player data names
                 l.bindTooltip(`<strong>${f.properties.name}</strong>${d ? '<br>' + img + d.teamName + ' Team (' + d.userName + ')' : ''}`).openTooltip();
             });
             l.on('mouseout', () => { updateStyles(); l.closeTooltip(); });
@@ -546,7 +571,6 @@ async function toggle(id) {
 
     const cur = selected[id] || {};
     
-    // Read user team status configuration mapping vectors
     const userTeamColor = Object.keys(globalTeams).find(color => 
         globalTeams[color].some(player => player.uid === currentUser.uid)
     );
@@ -585,7 +609,6 @@ function updateStyles() {
     });
 }
 
-// Convert Scoreboard mapping mechanics to calculate points directly by structured Team Assignment instead of individual usernames
 function updateScoreboard() {
     const teamScores = { Red: 0, Green: 0, Orange: 0 };
     
@@ -627,5 +650,3 @@ document.getElementById("resetBtn").onclick = async () => { if(confirm("Reset ma
 </script>
 </body>
 </html>
-
-```
