@@ -59,7 +59,7 @@
       position:absolute; top:15vh; right:10px;
       background: rgba(255,255,255,0.9); padding:12px;
       font-size:14px; z-index:1000; border-radius: 8px;
-      min-width: 140px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      min-width: 120px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
 
     /* --- MOBILE DECK DRAWER --- */
@@ -97,7 +97,7 @@
 
     /* --- BUTTON LAYOUT --- */
     #drawer-controls { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-    .btn-row { display: flex; gap: 6px; margin-bottom: 4px; }
+    .btn-row { display: flex; gap: 6px; }
     #drawer-controls button { flex: 1; padding: 12px 5px; border: none; border-radius: 8px; font-weight: bold; color: white; font-size: 10px; cursor: pointer; }
     
     #drawBtn { background: #247ad1; }
@@ -124,36 +124,22 @@
     .close-btn { background: #2c3e50; width: 100%; margin-bottom: 8px; }
     #tt-discardBtn { background: #e74c3c; flex: 1; }
     #tt-completeBtn { background: #27ae60; flex: 1; }
-    #tt-conditionalCompleteBtn { background: #16a085; flex: 1; display: none; }
 
     #addChallengeBtn { background: #247ad1; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; margin-bottom: 10px; display:none; }
-    
-    /* --- VIEW ALL TABS --- */
-    .modal-tabs { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 2px solid #2c3e50; }
-    .modal-tab-btn { flex: 1; padding: 8px; border: none; background: #ddd; font-weight: bold; cursor: pointer; border-radius: 6px 6px 0 0; }
-    .modal-tab-btn.active { background: #2c3e50; color: white; }
-
-    /* --- TEAM SELECTION BUTTONS --- */
-    .team-select-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-    .team-choice-btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; color: white; font-size: 16px; cursor: pointer; text-shadow: 1px 1px 2px rgba(0,0,0,0.4); }
-    .team-choice-btn.team-btn-red { background-color: red; }
-    .team-choice-btn.team-btn-green { background-color: green; }
-    .team-choice-btn.team-btn-orange { background-color: orange; color: black; text-shadow: none; }
-
-    /* --- BOTTOM RIGHT BUTTON CONTROLS --- */
     #signOutBtn { position: absolute; bottom: 20px; right: 15px; width: 45px; height: 45px; z-index: 1000; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); 
                  cursor: pointer;display: flex;align-items: center;justify-content: center;padding: 10px;transition: background 0.2s; border-radius: 6px; background: white;
     }
-    #leaveTeamBtn { position: absolute; bottom: 73px; right: 15px; width: 45px; height: 45px; z-index: 1000; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); 
-                 cursor: pointer;display: flex;align-items: center;justify-content: center;padding: 10px;transition: background 0.2s; border-radius: 6px; background: white;
-    }
     
-    #signOutBtn:hover, #leaveTeamBtn:hover {
+    #signOutBtn:hover {
       background: #f0f0f0;
     }
     
-    #signOutBtn svg { pointer-events: none; width: 24px; height: 24px; color: #c0392b; }
-    #leaveTeamBtn svg { pointer-events: none; width: 24px; height: 24px; color: #000000; }
+    #signOutBtn svg {
+      pointer-events: none;
+      width: 24px;
+      height: 24px;
+      color: #c0392b;
+    }
   </style>
 </head>
 <body>
@@ -164,7 +150,7 @@
 <div id="controls">
   <button id="loginBtn">Sign in with Google</button>
   <div id="toggleModeContainer" style="display:none;">
-    <span>Claiming:</span>
+    <span>Claiming Mode:</span>
     <label class="switch">
       <input type="checkbox" id="modeToggle" checked>
       <span class="slider"></span>
@@ -182,7 +168,7 @@
 
 <div id="card-drawer">
     <div id="drawer-tab" onclick="toggleDrawer()">DECK</div>
-    <h4 id="drawer-header" style="margin:0 0 5px 0; color: #34495e; font-size: 14px;">Your Challenges | Powerups: 0</h4>
+    <h4 style="margin:0 0 5px 0; color: #34495e; font-size: 14px;">Your Challenges</h4>
     <div id="deck-container"></div>
     <div id="drawer-controls">
         <div class="btn-row">
@@ -206,7 +192,6 @@
         <div id="tt-action-row" class="btn-row">
             <button id="tt-discardBtn" class="action-btn">Discard</button>
             <button id="tt-completeBtn" class="action-btn">Complete</button>
-            <button id="tt-conditionalCompleteBtn" class="action-btn">Complete with ⭐</button>
         </div>
     </div>
 </div>
@@ -219,24 +204,10 @@
 
 <div id="view-all-popup" class="popup-overlay">
     <h3>All Challenges</h3>
-    <div class="modal-tabs">
-        <button id="viewAllTabRegular" class="modal-tab-btn active" onclick="switchViewAllTab('regular')">Regular</button>
-        <button id="viewAllTabBattle" class="modal-tab-btn" onclick="switchViewAllTab('battle')">Battle</button>
-    </div>
     <div id="all-challenges-list" class="scroll-list"></div>
     <div id="all-challenge-detail" style="font-size: 13px; color: #666; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">Select challenge to view info</div>
     <button id="addChallengeBtn">Add Challenge to Deck</button>
     <button class="action-btn close-btn" onclick="closePopup('view-all-popup')">Close</button>
-</div>
-
-<div id="team-popup" class="popup-overlay" style="z-index: 3500;">
-    <h3>Select Your Team</h3>
-    <p style="font-size: 13px; color: #555;">Each team color supports up to 2 players.</p>
-    <div class="team-select-grid">
-        <button class="team-choice-btn team-btn-red" onclick="joinTeam('red')">Join Red Team</button>
-        <button class="team-choice-btn team-btn-green" onclick="joinTeam('green')">Join Green Team</button>
-        <button class="team-choice-btn team-btn-orange" onclick="joinTeam('orange')">Join Orange Team</button>
-    </div>
 </div>
 
 <div id="rules-popup" class="popup-overlay">
@@ -259,15 +230,6 @@
     </ul>
     <button class="action-btn close-btn" onclick="closePopup('rules-popup')">Close</button>
 </div>
-
-<!-- Leave Team Button situated directly above Logout -->
-<button id="leaveTeamBtn" style="display:none;" onclick="leaveTeam()" title="Leave Current Team">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M10 22H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h5"></path>
-    <polyline points="17 16 22 11 17 6"></polyline>
-    <line x1="22" y1="11" x2="9" y2="11"></line>
-  </svg>
-</button>
 
 <button id="signOutBtn" style="display:none;" onclick="logout()" title="Sign Out">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -301,110 +263,34 @@ let currentUser = null, selectedColor = "red", selected = {}, geojsonLayer = nul
 let challenges = [], battleChallenges = [], userHand = [], completedChallenges = [], battleCard = null, selectedSlotIndex = null;
 let tempSelectedAllIndex = null;
 
-let globalTeams = { red: [], green: [], orange: [] };
-let currentViewAllTab = 'regular'; 
-let powerupCount = 0;
-
 onAuthStateChanged(auth, user => {
   if(user){
     currentUser = user;
-    
-    onSnapshot(doc(db, "mapState", "teamsRoster"), rosterSnap => {
-        if(rosterSnap.exists()) {
-            globalTeams = rosterSnap.data();
-        }
-        
-        const userAssignedColor = Object.keys(globalTeams).find(color => 
-            globalTeams[color].some(player => player.uid === user.uid)
-        );
-        
-        if (userAssignedColor) {
-            closePopup('team-popup');
-            selectedColor = userAssignedColor;
-            document.getElementById("activeColor").style.backgroundColor = selectedColor;
-        } else {
-            openPopup('team-popup');
-        }
-    });
-
     onSnapshot(doc(db, "userDecks", user.uid), ds => {
         if(ds.exists()){
             const d = ds.data();
             userHand = d.hand || [];
             battleCard = d.battleCard || null;
             completedChallenges = d.completed || [];
-            powerupCount = d.powerups || 0;
-        } else {
-            userHand = []; battleCard = null; completedChallenges = []; powerupCount = 0;
         }
-        document.getElementById('drawer-header').innerText = `Your Challenges | Powers: ${powerupCount}`;
         renderHand();
     });
   } else {
-    currentUser = null; userHand = []; battleCard = null; completedChallenges = []; powerupCount = 0; renderHand();
-    document.getElementById('drawer-header').innerText = "Your Challenges | Powers: 0";
-    closePopup('team-popup');
+    currentUser = null; userHand = []; battleCard = null; completedChallenges = []; renderHand();
   }
   updateUI();
 });
 
-window.joinTeam = async (color) => {
-    if (!currentUser) return;
-    
-    if (globalTeams[color] && globalTeams[color].length >= 2) {
-        return alert(`The ${color.toUpperCase()} team is currently full! Please choose a different team.`);
-    }
-    
-    Object.keys(globalTeams).forEach(c => {
-        globalTeams[c] = globalTeams[c].filter(p => p.uid !== currentUser.uid);
-    });
-    
-    globalTeams[color].push({
-        uid: currentUser.uid,
-        name: currentUser.displayName || "Anonymous Player"
-    });
-    
-    await setDoc(doc(db, "mapState", "teamsRoster"), globalTeams);
-    
-    const mates = globalTeams[color].filter(p => p.uid !== currentUser.uid).map(p => p.name);
-    if (mates.length > 0) {
-        alert(`You have joined the ${color.toUpperCase()} team with ${mates.join(", ")}!`);
-    } else {
-        alert(`You have joined the ${color.toUpperCase()} team, no teammates yet.`);
-    }
-    
-    selectedColor = color;
-    document.getElementById("activeColor").style.backgroundColor = selectedColor;
-    closePopup('team-popup');
-};
-
-// Leave Team Core Logic Mutation Loop
-window.leaveTeam = async () => {
-    if (!currentUser) return;
-    if (!confirm("Are you sure you want to switch teams?")) return;
-
-    Object.keys(globalTeams).forEach(c => {
-        globalTeams[c] = globalTeams[c].filter(p => p.uid !== currentUser.uid);
-    });
-
-    await setDoc(doc(db, "mapState", "teamsRoster"), globalTeams);
-    alert("You have left the team. Please choose a new team.");
-};
-
 async function saveDeck() {
     if(!currentUser) return;
-    await setDoc(doc(db, "userDecks", currentUser.uid), { 
-        hand: userHand, 
-        battleCard, 
-        completed: completedChallenges,
-        powerups: powerupCount 
-    });
+    await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand, battleCard, completed: completedChallenges });
 }
 
 window.openPopup = (id) => document.getElementById(id).style.display = 'block';
 window.closePopup = (id) => document.getElementById(id).style.display = 'none';
 window.toggleDrawer = () => document.getElementById('card-drawer').classList.toggle('open');
 
+// --- LOGIN LOGIC ---
 document.getElementById('loginBtn').onclick = () => {
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider).catch(error => console.error(error));
@@ -413,6 +299,7 @@ document.getElementById('loginBtn').onclick = () => {
 function renderHand() {
     const container = document.getElementById('deck-container');
     container.innerHTML = '';
+    // Limit loop from 7 down to 3
     for (let i = 0; i < 3; i++) {
         const slot = document.createElement('div');
         slot.className = 'card-slot' + (userHand[i] ? ' occupied' : '') + (selectedSlotIndex === i ? ' selected' : '');
@@ -436,11 +323,6 @@ function showCardTooltip(card) {
     const isCompleted = completedChallenges.includes(card) && selectedSlotIndex === null;
     document.getElementById('tt-action-row').style.display = isCompleted ? 'none' : 'flex';
     
-    const textToAnalyze = ((card.title || '') + ' ' + (card.description || '')).toLowerCase();
-    const isConditional = (card.stars === 0) && (textToAnalyze.includes('⭐') || textToAnalyze.includes('earn a star') || textToAnalyze.includes('get a star'));
-    
-    document.getElementById('tt-conditionalCompleteBtn').style.display = (isConditional && !isCompleted) ? 'block' : 'none';
-    
     openPopup('card-tooltip');
 }
 
@@ -454,23 +336,6 @@ document.getElementById('tt-completeBtn').onclick = () => {
     if (selectedSlotIndex === null) return;
     const card = (selectedSlotIndex === 3) ? battleCard : userHand[selectedSlotIndex];
     if(!card) return;
-    
-    if(card.stars && card.stars > 0) {
-        powerupCount += card.stars;
-    }
-    
-    completedChallenges.push(card);
-    if (selectedSlotIndex === 3) battleCard = null; else userHand.splice(selectedSlotIndex, 1);
-    selectedSlotIndex = null; closePopup('card-tooltip'); saveDeck();
-};
-
-document.getElementById('tt-conditionalCompleteBtn').onclick = () => {
-    if (selectedSlotIndex === null) return;
-    const card = (selectedSlotIndex === 3) ? battleCard : userHand[selectedSlotIndex];
-    if(!card) return;
-    
-    powerupCount += 1;
-    
     completedChallenges.push(card);
     if (selectedSlotIndex === 3) battleCard = null; else userHand.splice(selectedSlotIndex, 1);
     selectedSlotIndex = null; closePopup('card-tooltip'); saveDeck();
@@ -489,11 +354,10 @@ document.getElementById('battleBtn').onclick = () => {
 };
 
 document.getElementById('resetHandBtn').onclick = () => {
-    if(confirm("Are you sure you want to reset? This will remove all cards in your hand, powerups, and completed challenges.")) {
+    if(confirm("Are you sure you want to reset? This will remove all cards in your hand and all completed challenges.")) {
         userHand = [];
         completedChallenges = [];
         battleCard = null;
-        powerupCount = 0;
         saveDeck();
     }
 };
@@ -512,27 +376,14 @@ window.openCompletedPopup = () => {
 };
 
 window.openViewAllPopup = () => {
-    switchViewAllTab('regular');
-    openPopup('view-all-popup');
-};
-
-window.switchViewAllTab = (tab) => {
-    currentViewAllTab = tab;
-    document.getElementById('viewAllTabRegular').classList.toggle('active', tab === 'regular');
-    document.getElementById('viewAllTabBattle').classList.toggle('active', tab === 'battle');
-    
     const list = document.getElementById('all-challenges-list');
     const detail = document.getElementById('all-challenge-detail');
     const addBtn = document.getElementById('addChallengeBtn');
-    
     list.innerHTML = '';
     tempSelectedAllIndex = null;
     addBtn.style.display = 'none';
-    detail.innerHTML = 'Select challenge to view info';
-    
-    const relevantDeck = (tab === 'regular') ? challenges : battleChallenges;
-    
-    relevantDeck.forEach((c, idx) => {
+
+    challenges.forEach((c, idx) => {
         const item = document.createElement('div');
         item.className = 'list-item';
         item.innerText = c.title;
@@ -541,14 +392,15 @@ window.switchViewAllTab = (tab) => {
             document.querySelectorAll('#all-challenges-list .list-item').forEach(el => el.classList.remove('selected'));
             item.classList.add('selected');
             detail.innerHTML = `<strong>${c.title}</strong><br>${c.description || 'No rules.'}`;
-            addBtn.style.display = (tab === 'regular') ? 'block' : 'none';
+            addBtn.style.display = 'block';
         };
         list.appendChild(item);
     });
+    openPopup('view-all-popup');
 };
 
 document.getElementById('addChallengeBtn').onclick = () => {
-    if(tempSelectedAllIndex === null || currentViewAllTab !== 'regular') return;
+    if(tempSelectedAllIndex === null) return;
     if(userHand.length >= 3) return alert("Hand full");
     userHand.push(challenges[tempSelectedAllIndex]);
     saveDeck();
@@ -571,7 +423,7 @@ fetch('Boston Subdivisions.json').then(res => res.json()).then(data => {
                 l.setStyle({ color: "#00fffb", weight: 4 });
                 const d = selected[f._id];
                 const img = d?.photo ? `<img src="${d.photo}" style="width:18px;height:18px;border-radius:50%;vertical-align:middle;margin-right:6px;">` : '';
-                l.bindTooltip(`<strong>${f.properties.name}</strong>${d ? '<br>' + img + d.teamName + ' Team (' + d.userName + ')' : ''}`).openTooltip();
+                l.bindTooltip(`<strong>${f.properties.name}</strong>${d ? '<br>' + img + d.userName : ''}`).openTooltip();
             });
             l.on('mouseout', () => { updateStyles(); l.closeTooltip(); });
         }
@@ -579,34 +431,23 @@ fetch('Boston Subdivisions.json').then(res => res.json()).then(data => {
 });
 
 async function toggle(id) {
-    if (!currentUser) return alert("Please log in first.");
+    if (!currentUser) return;
     
+    // Check Claiming toggle state before execution
     const isClaimingEnabled = document.getElementById('modeToggle').checked;
     if (!isClaimingEnabled) {
-        return alert("If you are trying to claim a territory, enable claiming.");
+        return alert("Claiming mode is turned off! Switch it back on in the bottom control panel to update territory.");
     }
 
     const cur = selected[id] || {};
     
-    const userTeamColor = Object.keys(globalTeams).find(color => 
-        globalTeams[color].some(player => player.uid === currentUser.uid)
-    );
-    if(!userTeamColor) return alert("Please assign yourself to an active team setup first.");
-
     if (selectedColor === "black") {
         if (cur.color) cur.isLocked = !cur.isLocked;
-    } else if (cur.userId === currentUser.uid && cur.color === userTeamColor) {
+    } else if (cur.userId === currentUser.uid && cur.color === selectedColor) {
         delete selected[id];
     } else {
-        if (cur.isLocked && cur.color !== userTeamColor) return alert("This neighborhood is locked");
-        selected[id] = { 
-            color: userTeamColor, 
-            teamName: userTeamColor.charAt(0).toUpperCase() + userTeamColor.slice(1),
-            userName: currentUser.displayName || "Player", 
-            userId: currentUser.uid, 
-            photo: currentUser.photoURL || "", 
-            isLocked: false 
-        };
+        if (cur.isLocked && cur.userId !== currentUser.uid) return alert("This neighborhood is locked");
+        selected[id] = { color: selectedColor, userName: currentUser.displayName, userId: currentUser.uid, photo: currentUser.photoURL, isLocked: false };
     }
 
     updateStyles(); 
@@ -627,21 +468,17 @@ function updateStyles() {
 }
 
 function updateScoreboard() {
-    const teamScores = { Red: 0, Green: 0, Orange: 0 };
-    
+    const s = {}; 
     Object.values(selected).forEach(i => {
-        if (i && i.teamName && teamScores[i.teamName] !== undefined) {
-            teamScores[i.teamName] += 1;
+        if(i && i.userName) {
+            s[i.userName] = { points: (s[i.userName]?.points || 0) + 1, color: i.color };
         }
     });
     
     document.getElementById("scoreboard").innerHTML = "<strong>Scoreboard</strong><hr style='margin:5px 0'>" + 
-        Object.entries(teamScores)
-        .sort((a,b) => b[1] - a[1])
-        .map(([team, points]) => {
-            const hexColor = team === 'Orange' ? '#d35400' : team.toLowerCase();
-            return `<span style="color:${hexColor}; font-weight:bold;">${team} Team</span>: ${points}`;
-        })
+        Object.entries(s)
+        .sort((a,b) => b[1].points - a[1].points)
+        .map(([name, data]) => `<span style="color:${data.color === 'black' ? '#333' : data.color}; font-weight:bold;">${name}</span>: ${data.points}`)
         .join("<br>");
 }
 
@@ -649,12 +486,12 @@ function updateUI() {
     const isAuth = !!currentUser;
     document.getElementById("loginBtn").style.display = isAuth ? "none" : "block";
     document.getElementById("signOutBtn").style.display = isAuth ? "block" : "none";
-    document.getElementById("leaveTeamBtn").style.display = isAuth ? "block" : "none";
     document.getElementById("toggleModeContainer").style.display = isAuth ? "flex" : "none";
     document.getElementById("colorPicker").style.display = isAuth ? "flex" : "none";
     document.getElementById("resetBtn").style.display = (currentUser?.email === "blatherstv@gmail.com") ? "block" : "none";
 }
 
+// Interactive listener for the mode toggle switch text display
 document.getElementById('modeToggle').onchange = (e) => {
     document.getElementById('modeStatusText').innerText = e.target.checked ? "On" : "Off";
 };
