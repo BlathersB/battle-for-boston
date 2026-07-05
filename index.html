@@ -102,6 +102,7 @@
     
     #drawBtn { background: #247ad1; }
     #battleBtn { background: #34495e; }
+    #usePowerupBtn { background: #dea60b; }
     #resetHandBtn { background: #7f8c8d; }
     #viewCompletedBtn, #viewAllBtn { background: #8e44ad; }
 
@@ -116,6 +117,12 @@
     #card-tooltip { z-index: 4000 !important; }
     .scroll-list { display: flex; flex-direction: column; gap: 10px; margin: 15px 0; max-height: 40vh; overflow-y: auto; padding: 5px; }
     .list-item { padding: 10px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; }
+    .list-item.selected { border-color: #3498db; background: #f0f7ff; }
+
+    /* --- TAB SYSTEM FOR ALL CHALLENGES --- */
+    .tab-header { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 15px; }
+    .tab-btn { flex: 1; padding: 10px; border: none; background: #eee; cursor: pointer; font-weight: bold; font-size: 14px; color: #555; }
+    .tab-btn.active { background: white; border-bottom: 3px solid #2c3e50; color: #2c3e50; }
 
     .special-tagP { background: #dea60b; color: white; font-size: 10px; padding: 4px 10px; border-radius: 12px; margin: 5px 2px; font-weight: bold; display: inline-block; }
     .special-tag2 { background: #000; color: white; font-size: 10px; padding: 4px 10px; border-radius: 12px; margin: 5px 2px; font-weight: bold; display: inline-block; }
@@ -124,6 +131,7 @@
     .close-btn { background: #2c3e50; width: 100%; margin-bottom: 8px; }
     #tt-discardBtn { background: #e74c3c; flex: 1; }
     #tt-completeBtn { background: #27ae60; flex: 1; }
+    #tt-starCompleteBtn { background: #f1c40f; color: #2c3e50; flex: 1; display: none; }
 
     #addChallengeBtn { background: #247ad1; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; margin-bottom: 10px; display:none; }
     #signOutBtn { position: absolute; bottom: 20px; right: 15px; width: 45px; height: 45px; z-index: 1000; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); 
@@ -168,15 +176,16 @@
 
 <div id="card-drawer">
     <div id="drawer-tab" onclick="toggleDrawer()">DECK</div>
-    <h4 style="margin:0 0 5px 0; color: #34495e; font-size: 14px;">Your Challenges</h4>
+    <h4 id="drawer-header" style="margin:0 0 5px 0; color: #34495e; font-size: 14px;">Your Challenges | Powerups: 0</h4>
     <div id="deck-container"></div>
     <div id="drawer-controls">
         <div class="btn-row">
             <button id="drawBtn">Draw Challenge</button>
             <button id="battleBtn">Battle Challenge</button>
-            <button id="resetHandBtn">Reset Hand</button>
+            <button id="usePowerupBtn">Use Powerup</button>
         </div>
         <div class="btn-row">
+            <button id="resetHandBtn">Reset Hand</button>
             <button id="viewCompletedBtn" onclick="openCompletedPopup()">Completed Challenges</button>
             <button id="viewAllBtn" onclick="openViewAllPopup()">View All Challenges</button>
         </div>
@@ -189,9 +198,10 @@
     <div id="tt-stars"></div><div id="tt-tag"></div>
     <div style="margin-top: 15px;">
         <button class="action-btn close-btn" onclick="closePopup('card-tooltip')">Close</button>
-        <div id="tt-action-row" class="btn-row">
+        <div id="tt-action-row" class="btn-row" style="flex-wrap: wrap; gap: 6px;">
             <button id="tt-discardBtn" class="action-btn">Discard</button>
             <button id="tt-completeBtn" class="action-btn">Complete</button>
+            <button id="tt-starCompleteBtn" class="action-btn">Complete with ⭐</button>
         </div>
     </div>
 </div>
@@ -203,7 +213,10 @@
 </div>
 
 <div id="view-all-popup" class="popup-overlay">
-    <h3>All Challenges</h3>
+    <div class="tab-header">
+        <button id="tab-regular" class="tab-btn active" onclick="switchViewAllTab('regular')">Regular</button>
+        <button id="tab-battle" class="tab-btn" onclick="switchViewAllTab('battle')">Battle</button>
+    </div>
     <div id="all-challenges-list" class="scroll-list"></div>
     <div id="all-challenge-detail" style="font-size: 13px; color: #666; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">Select challenge to view info</div>
     <button id="addChallengeBtn">Add Challenge to Deck</button>
@@ -226,7 +239,6 @@
         <li><strong>Remember:</strong> Draw 1 new challenge after each one you complete. You cannot discard challenges aside from earning a powerup or pulling a duplicate</li>
         <li><strong>Full Rules:</strong> Consult <a href="https://docs.google.com/document/d/12UeE2URIqaDAgssEYz7DkNpZFbi_vXyOhMMXMsztil4">rules document</a> for full detailed explanations</li>
         <li><strong>Note:</strong> You must be signed into a Google account in order to play and save your progress.</li>
-
     </ul>
     <button class="action-btn close-btn" onclick="closePopup('rules-popup')">Close</button>
 </div>
@@ -261,7 +273,7 @@ const auth = getAuth();
 
 let currentUser = null, selectedColor = "red", selected = {}, geojsonLayer = null, lockMarkers = L.layerGroup();
 let challenges = [], battleChallenges = [], userHand = [], completedChallenges = [], battleCard = null, selectedSlotIndex = null;
-let tempSelectedAllIndex = null;
+let tempSelectedAllIndex = null, powerups = 0, currentViewAllTab = 'regular';
 
 onAuthStateChanged(auth, user => {
   if(user){
@@ -272,18 +284,19 @@ onAuthStateChanged(auth, user => {
             userHand = d.hand || [];
             battleCard = d.battleCard || null;
             completedChallenges = d.completed || [];
+            powerups = d.powerups || 0;
         }
         renderHand();
     });
   } else {
-    currentUser = null; userHand = []; battleCard = null; completedChallenges = []; renderHand();
+    currentUser = null; userHand = []; battleCard = null; completedChallenges = []; powerups = 0; renderHand();
   }
   updateUI();
 });
 
 async function saveDeck() {
     if(!currentUser) return;
-    await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand, battleCard, completed: completedChallenges });
+    await setDoc(doc(db, "userDecks", currentUser.uid), { hand: userHand, battleCard, completed: completedChallenges, powerups: powerups });
 }
 
 window.openPopup = (id) => document.getElementById(id).style.display = 'block';
@@ -297,9 +310,10 @@ document.getElementById('loginBtn').onclick = () => {
 };
 
 function renderHand() {
+    document.getElementById('drawer-header').innerText = `Your Challenges | Powerups: ${powerups}`;
     const container = document.getElementById('deck-container');
     container.innerHTML = '';
-    // Limit loop from 7 down to 3
+    
     for (let i = 0; i < 3; i++) {
         const slot = document.createElement('div');
         slot.className = 'card-slot' + (userHand[i] ? ' occupied' : '') + (selectedSlotIndex === i ? ' selected' : '');
@@ -320,8 +334,18 @@ function showCardTooltip(card) {
     document.getElementById('tt-stars').innerHTML = card.stars ? `<div class="special-tagP">Powerup ${'★'.repeat(card.stars)}</div>` : '';
     document.getElementById('tt-tag').innerHTML = card.twoTerritories ? '<div class="special-tag2">CLAIM TWO NEIGHBORHOODS</div>' : '';
     
-    const isCompleted = completedChallenges.includes(card) && selectedSlotIndex === null;
+    const isCompleted = completedChallenges.some(c => c.title === card.title) && selectedSlotIndex === null;
     document.getElementById('tt-action-row').style.display = isCompleted ? 'none' : 'flex';
+    
+    // Check if description hints at an optional conditional star award
+    const descText = card.description || "";
+    const hasConditionalStar = /earn a ⭐|with a ⭐|get a ⭐/i.test(descText);
+    
+    if (hasConditionalStar && !isCompleted && selectedSlotIndex !== null) {
+        document.getElementById('tt-starCompleteBtn').style.display = 'block';
+    } else {
+        document.getElementById('tt-starCompleteBtn').style.display = 'none';
+    }
     
     openPopup('card-tooltip');
 }
@@ -336,6 +360,26 @@ document.getElementById('tt-completeBtn').onclick = () => {
     if (selectedSlotIndex === null) return;
     const card = (selectedSlotIndex === 3) ? battleCard : userHand[selectedSlotIndex];
     if(!card) return;
+    
+    // Add standard powerups if configured on the item natively
+    if (card.stars && card.stars > 0) {
+        powerups += card.stars;
+    }
+    
+    completedChallenges.push(card);
+    if (selectedSlotIndex === 3) battleCard = null; else userHand.splice(selectedSlotIndex, 1);
+    selectedSlotIndex = null; closePopup('card-tooltip'); saveDeck();
+};
+
+document.getElementById('tt-starCompleteBtn').onclick = () => {
+    if (selectedSlotIndex === null) return;
+    const card = (selectedSlotIndex === 3) ? battleCard : userHand[selectedSlotIndex];
+    if(!card) return;
+    
+    // Conditional completion button adds native stars + 1 bonus star conditional reward
+    let earned = (card.stars || 0) + 1;
+    powerups += earned;
+    
     completedChallenges.push(card);
     if (selectedSlotIndex === 3) battleCard = null; else userHand.splice(selectedSlotIndex, 1);
     selectedSlotIndex = null; closePopup('card-tooltip'); saveDeck();
@@ -353,11 +397,20 @@ document.getElementById('battleBtn').onclick = () => {
     saveDeck(); showCardTooltip(battleCard);
 };
 
+document.getElementById('usePowerupBtn').onclick = () => {
+    if (powerups <= 0) return alert("You don't have any powerups to use!");
+    if (confirm("Spend 1 powerup?")) {
+        powerups -= 1;
+        saveDeck();
+    }
+};
+
 document.getElementById('resetHandBtn').onclick = () => {
-    if(confirm("Are you sure you want to reset? This will remove all cards in your hand and all completed challenges.")) {
+    if(confirm("Are you sure you want to reset? This will remove all cards in your hand, all completed challenges, and reset powerups.")) {
         userHand = [];
         completedChallenges = [];
         battleCard = null;
+        powerups = 0;
         saveDeck();
     }
 };
@@ -376,14 +429,26 @@ window.openCompletedPopup = () => {
 };
 
 window.openViewAllPopup = () => {
+    switchViewAllTab('regular');
+    openPopup('view-all-popup');
+};
+
+window.switchViewAllTab = (tab) => {
+    currentViewAllTab = tab;
+    document.getElementById('tab-regular').classList.toggle('active', tab === 'regular');
+    document.getElementById('tab-battle').classList.toggle('active', tab === 'battle');
+    
     const list = document.getElementById('all-challenges-list');
     const detail = document.getElementById('all-challenge-detail');
     const addBtn = document.getElementById('addChallengeBtn');
     list.innerHTML = '';
     tempSelectedAllIndex = null;
     addBtn.style.display = 'none';
+    detail.innerHTML = 'Select challenge to view info';
 
-    challenges.forEach((c, idx) => {
+    const sourceArray = (tab === 'regular') ? challenges : battleChallenges;
+
+    sourceArray.forEach((c, idx) => {
         const item = document.createElement('div');
         item.className = 'list-item';
         item.innerText = c.title;
@@ -392,15 +457,20 @@ window.openViewAllPopup = () => {
             document.querySelectorAll('#all-challenges-list .list-item').forEach(el => el.classList.remove('selected'));
             item.classList.add('selected');
             detail.innerHTML = `<strong>${c.title}</strong><br>${c.description || 'No rules.'}`;
-            addBtn.style.display = 'block';
+            
+            // Only reveal the add to deck option if it is a Regular challenge asset
+            if (currentViewAllTab === 'regular') {
+                addBtn.style.display = 'block';
+            } else {
+                addBtn.style.display = 'none';
+            }
         };
         list.appendChild(item);
     });
-    openPopup('view-all-popup');
 };
 
 document.getElementById('addChallengeBtn').onclick = () => {
-    if(tempSelectedAllIndex === null) return;
+    if(tempSelectedAllIndex === null || currentViewAllTab !== 'regular') return;
     if(userHand.length >= 3) return alert("Hand full");
     userHand.push(challenges[tempSelectedAllIndex]);
     saveDeck();
@@ -433,7 +503,6 @@ fetch('Boston Subdivisions.json').then(res => res.json()).then(data => {
 async function toggle(id) {
     if (!currentUser) return;
     
-    // Check Claiming toggle state before execution
     const isClaimingEnabled = document.getElementById('modeToggle').checked;
     if (!isClaimingEnabled) {
         return alert("Claiming mode is turned off! Switch it back on in the bottom control panel to update territory.");
@@ -491,7 +560,6 @@ function updateUI() {
     document.getElementById("resetBtn").style.display = (currentUser?.email === "blatherstv@gmail.com") ? "block" : "none";
 }
 
-// Interactive listener for the mode toggle switch text display
 document.getElementById('modeToggle').onchange = (e) => {
     document.getElementById('modeStatusText').innerText = e.target.checked ? "On" : "Off";
 };
