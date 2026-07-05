@@ -153,7 +153,7 @@
     }
     
     #signOutBtn svg { pointer-events: none; width: 24px; height: 24px; color: #c0392b; }
-    #leaveTeamBtn svg { pointer-events: none; width: 24px; height: 24px; color: #d35400; }
+    #leaveTeamBtn svg { pointer-events: none; width: 24px; height: 24px; color: #000000; }
   </style>
 </head>
 <body>
@@ -231,7 +231,7 @@
 
 <div id="team-popup" class="popup-overlay" style="z-index: 3500;">
     <h3>Select Your Team</h3>
-    <p style="font-size: 13px; color: #555;">Each team color supports up to 2 active players. Please choose yours:</p>
+    <p style="font-size: 13px; color: #555;">Each team color supports up to 2 players.</p>
     <div class="team-select-grid">
         <button class="team-choice-btn team-btn-red" onclick="joinTeam('red')">Join Red Team</button>
         <button class="team-choice-btn team-btn-green" onclick="joinTeam('green')">Join Green Team</button>
@@ -352,7 +352,7 @@ window.joinTeam = async (color) => {
     if (!currentUser) return;
     
     if (globalTeams[color] && globalTeams[color].length >= 2) {
-        return alert(`The ${color.toUpperCase()} team is currently full! Please choose a different alignment.`);
+        return alert(`The ${color.toUpperCase()} team is currently full! Please choose a different team.`);
     }
     
     Object.keys(globalTeams).forEach(c => {
@@ -381,14 +381,14 @@ window.joinTeam = async (color) => {
 // Leave Team Core Logic Mutation Loop
 window.leaveTeam = async () => {
     if (!currentUser) return;
-    if (!confirm("Are you sure you want to leave your team? This will allow you to switch to another active color block.")) return;
+    if (!confirm("Are you sure you want to switch teams?")) return;
 
     Object.keys(globalTeams).forEach(c => {
         globalTeams[c] = globalTeams[c].filter(p => p.uid !== currentUser.uid);
     });
 
     await setDoc(doc(db, "mapState", "teamsRoster"), globalTeams);
-    alert("You have left the team. Please choose a new alignment profile.");
+    alert("You have left the team. Please choose a new team.");
 };
 
 async function saveDeck() {
