@@ -484,7 +484,7 @@ lockMarkers.addTo(map);
 fetch('challenges.json').then(res => res.json()).then(d => challenges = d);
 fetch('battle-challenges.json').then(res => res.json()).then(d => battleChallenges = d);
 
-fetch('Boston Subdivisions.json').then(res => res.json()).then(data => {
+fetch('nyc.geojson').then(res => res.json()).then(data => {
     data.features.forEach((f, i) => f._id = i.toString());
     geojsonLayer = L.geoJSON(data, { 
         onEachFeature: (f, l) => {
